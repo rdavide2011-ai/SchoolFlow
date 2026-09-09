@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0c10">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SchoolFlow">
+<meta name="application-name" content="SchoolFlow">
+<meta name="description" content="SchoolFlow — Your school. Your progress.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="SchoolFlow">
+<meta property="og:description" content="Your school. Your progress.">
+<meta property="og:image" content="SchoolFlow-logo.png">
+<meta property="og:image:alt" content="Logo ufficiale SchoolFlow">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SchoolFlow">
+<meta name="twitter:description" content="Your school. Your progress.">
+<meta name="twitter:image" content="SchoolFlow-logo.png">
+<link rel="icon" type="image/png" sizes="1024x1024" href="SchoolFlow-logo.png">
+<link rel="apple-touch-icon" sizes="1024x1024" href="SchoolFlow-logo.png">
+<title>SchoolFlow</title>
+<style>
+:root{
+ --bg:#f5f6fa;--card:#fff;--text:#17191f;--muted:#7d8491;--line:#e9ebf0;
+ --accent:#6c4df6;--accentSoft:#eeeaff;--green:#22b573;--red:#e55361;--orange:#f0a52c;
+ --shadow:0 8px 28px rgba(25,28,38,.07);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Inter,Segoe UI,sans-serif}
+button,input,select{font:inherit}
+button{border:0;cursor:pointer}
+.app{min-height:100vh;padding-bottom:88px}
+.top{
+ position:sticky;top:0;z-index:20;background:rgba(245,246,250,.92);
+ backdrop-filter:blur(20px);padding:calc(env(safe-area-inset-top) + 12px) 18px 12px;
+ display:flex;align-items:center;justify-content:space-between
+}
+.profile{display:flex;align-items:center;gap:11px}
+.avatar{width:43px;height:43px;border-radius:15px;overflow:hidden;background:#07111f;display:block;flex:none;box-shadow:0 4px 14px rgba(0,122,255,.14)}
+.avatar img{width:100%;height:100%;display:block;object-fit:cover}
+.top-title{font-size:17px;font-weight:900;letter-spacing:-.4px}.top-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.top-actions{display:flex;gap:7px}
+.top-btn{width:40px;height:40px;border-radius:13px;background:var(--card);box-shadow:var(--shadow);color:var(--text);font-size:18px}
+main{max-width:650px;margin:auto;padding:8px 17px 20px}
+.page{display:none;animation:up .2s ease}.page.active{display:block}
+@keyframes up{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.hero{padding:17px 2px 12px}.hello{font-size:12px;color:var(--muted);font-weight:700}.hero h1{font-size:31px;line-height:1.05;letter-spacing:-1.3px;margin:5px 0 8px}.hero p{margin:0;color:var(--muted);font-size:13px}
+.big-average{margin-top:18px;background:linear-gradient(140deg,#1b1926,#29213f);border-radius:25px;padding:23px;color:#fff;box-shadow:0 15px 40px rgba(37,27,67,.18);position:relative;overflow:hidden}
+.big-average:after{content:"";position:absolute;width:180px;height:180px;border:35px solid rgba(255,255,255,.05);border-radius:50%;right:-70px;top:-70px}
+.avg-label{font-size:10px;letter-spacing:1.4px;font-weight:800;color:#bcb4d6}.avg-number{font-size:48px;font-weight:950;letter-spacing:-2px;margin:4px 0}.avg-info{font-size:12px;color:#c7c2d1}.avg-pill{display:inline-flex;margin-top:14px;background:rgba(255,255,255,.1);padding:7px 10px;border-radius:10px;font-size:11px;font-weight:800}
+.section-title{display:flex;justify-content:space-between;align-items:center;margin:25px 2px 12px}.section-title h2{font-size:18px;margin:0;letter-spacing:-.5px}.section-title button{background:none;color:var(--accent);font-size:12px;font-weight:850}
+.subjects{display:grid;gap:10px}
+.subject{cursor:pointer;background:var(--card);border:1px solid var(--line);border-radius:19px;padding:15px;box-shadow:var(--shadow);display:flex;align-items:center;gap:13px}
+.subject-icon{width:45px;height:45px;border-radius:14px;background:var(--accentSoft);display:grid;place-items:center;font-size:20px;flex:none}
+.subject-main{min-width:0;flex:1}.subject-name{font-weight:850;font-size:14px}.subject-count{font-size:10px;color:var(--muted);margin-top:4px}
+.subject-score{text-align:right}.subject-score strong{font-size:22px;letter-spacing:-.6px}.subject-score small{display:block;font-size:9px;color:var(--muted);margin-top:1px}
+.good{color:var(--green)}.mid{color:var(--orange)}.bad{color:var(--red)}
+.progress{height:4px;background:#eef0f4;border-radius:99px;margin-top:8px;overflow:hidden}.progress i{height:100%;display:block;background:var(--accent);border-radius:99px}
+.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.quick{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:15px;text-align:left;box-shadow:var(--shadow)}.quick .qicon{font-size:20px}.quick b{display:block;font-size:12px;margin-top:9px}.quick span{display:block;color:var(--muted);font-size:10px;margin-top:3px}
+
+.back-link{
+ background:transparent;color:var(--accent);font-size:13px;font-weight:850;
+ padding:0;margin-bottom:12px
+}
+.subject-detail-summary{
+ background:#fff;border:1px solid var(--line);border-radius:20px;padding:16px;
+ box-shadow:var(--shadow);display:grid;grid-template-columns:1fr 1fr;gap:12px
+}
+.subject-detail-summary>div{
+ background:#f7f7fa;border-radius:14px;padding:13px
+}
+.subject-detail-summary span{display:block;font-size:9px;color:var(--muted);font-weight:850;letter-spacing:1px}
+.subject-detail-summary strong{display:block;font-size:27px;margin-top:5px}
+.primary-detail{
+ grid-column:1/-1;background:var(--accent);color:#fff;border-radius:13px;padding:13px;font-weight:850
+}
+.section-title>span{font-size:10px;color:var(--muted)}
+.page-head{padding:18px 2px 15px}.page-head .eyebrow{font-size:10px;color:var(--accent);font-weight:900;letter-spacing:1.4px}.page-head h1{font-size:30px;letter-spacing:-1.2px;margin:4px 0}.page-head p{font-size:12px;color:var(--muted);margin:0}
+.search-row{display:flex;gap:8px;margin-bottom:13px}.search{flex:1;border:1px solid var(--line);background:#fff;border-radius:13px;padding:12px 13px;outline:none;color:var(--text);box-shadow:var(--shadow)}.search:focus{border-color:#cfc6ff}.add-btn{background:var(--accent);color:#fff;border-radius:13px;padding:0 15px;font-weight:850}
+.list{display:grid;gap:9px}
+.manage{cursor:pointer;background:#fff;border:1px solid var(--line);border-radius:18px;padding:13px;display:flex;align-items:center;gap:11px;box-shadow:var(--shadow)}
+.manage .subject-icon{width:42px;height:42px}.manage-info{flex:1;min-width:0}.manage-info strong{font-size:14px}.manage-info small{display:block;color:var(--muted);font-size:10px;margin-top:3px}
+.actions{display:flex;gap:5px}.action{width:33px;height:33px;border-radius:10px;background:#f2f3f6;color:#5d6470}.action.delete{color:var(--red);background:#fff0f1}
+
+.grade-type-icon{width:42px;height:42px;border-radius:13px;background:#f2f0ff;display:grid;place-items:center;font-size:18px;flex:none}
+.grade-info{min-width:0;flex:1}
+.grade-actions{display:flex;gap:5px;margin-left:3px}
+.grade-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px}.grade-subject{font-weight:850;font-size:13px}.grade-details{font-size:10px;color:var(--muted);margin-top:4px}.grade-right{margin-left:auto;text-align:right}.grade-value{font-size:23px;font-weight:950}.weight{font-size:9px;color:var(--muted);margin-top:2px}
+.avg-list{display:grid;gap:10px}.avg-card{background:#fff;border:1px solid var(--line);border-radius:19px;padding:16px;box-shadow:var(--shadow)}.avg-head{display:flex;justify-content:space-between;align-items:center}.avg-head strong{font-size:14px}.avg-head b{font-size:24px}.avg-meta{display:flex;justify-content:space-between;color:var(--muted);font-size:10px;margin-top:9px}
+.empty{background:#fff;border:1px dashed #dfe2e8;border-radius:18px;padding:35px 20px;text-align:center;color:var(--muted);font-size:12px}.empty b{display:block;color:var(--text);font-size:14px;margin-bottom:5px}
+.stats-row{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:13px}.stat{background:#fff;border:1px solid var(--line);border-radius:17px;padding:15px;box-shadow:var(--shadow)}.stat span{font-size:9px;color:var(--muted);font-weight:850;letter-spacing:1px}.stat strong{display:block;font-size:25px;margin-top:6px}
+.info-card{background:#fff;border:1px solid var(--line);border-radius:19px;padding:17px;box-shadow:var(--shadow);font-size:12px;line-height:1.5;color:var(--muted)}
+.info-card b{color:var(--text)}
+.modal-wrap{position:fixed;inset:0;background:rgba(13,14,18,.52);backdrop-filter:blur(9px);display:none;align-items:flex-end;z-index:60}.modal-wrap.show{display:flex}
+.sheet{width:100%;max-width:650px;margin:auto;background:#fff;border-radius:25px 25px 0 0;max-height:92vh;overflow:auto;padding-bottom:calc(15px + env(safe-area-inset-bottom));animation:sheet .22s ease}
+@keyframes sheet{from{transform:translateY(40px);opacity:.5}to{transform:none;opacity:1}}
+.handle{width:38px;height:4px;background:#dfe1e6;border-radius:9px;margin:9px auto 2px}.sheet-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px}.sheet-head h3{margin:0;font-size:18px}.close{width:34px;height:34px;border-radius:10px;background:#f0f1f4;color:#666}
+.sheet-body{padding:0 18px 18px}.form{display:grid;gap:13px}.field label{display:block;font-size:9px;color:var(--muted);font-weight:900;letter-spacing:1px;margin-bottom:6px}.field input,.field select{width:100%;border:1px solid var(--line);background:#f7f8fa;border-radius:12px;padding:12px;outline:none;color:var(--text)}.field input:focus,.field select:focus{border-color:#c5baff;background:#fff}
+.sheet-foot{padding:12px 18px;border-top:1px solid var(--line);display:flex;gap:8px}.cancel{flex:1;background:#f0f1f4;color:#4e5560;border-radius:13px;padding:13px;font-weight:800}.save{flex:1;background:var(--accent);color:#fff;border-radius:13px;padding:13px;font-weight:850}
+.preview{background:#f4f1ff;border-radius:14px;padding:12px;color:#6048d7;font-size:11px}.preview strong{font-size:18px}
+
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:13px}
+.stat-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:15px;box-shadow:var(--shadow);min-width:0}
+.stat-card .stat-kicker{font-size:9px;color:var(--muted);font-weight:900;letter-spacing:1px}
+.stat-card .stat-title{font-size:13px;font-weight:850;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat-card .stat-value{font-size:26px;font-weight:950;margin-top:4px}
+.chart-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:15px;box-shadow:var(--shadow);overflow:hidden}
+.chart-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
+.chart-head h2{font-size:16px;margin:0;letter-spacing:-.4px}.chart-head p{font-size:10px;color:var(--muted);margin:4px 0 0}
+.chart-filter{border:1px solid var(--line);background:#f7f8fa;border-radius:11px;padding:8px 9px;font-size:10px;max-width:150px}
+.chart-wrap{width:100%;overflow:hidden}.trend-chart{width:100%;height:270px;display:block}
+.chart-empty{height:270px;display:grid;place-items:center;text-align:center;color:var(--muted);font-size:12px;padding:25px}
+.chart-empty b{display:block;color:var(--text);font-size:14px;margin-bottom:4px}
+.legend{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;max-height:120px;overflow:auto;padding-top:2px}.legend-item{display:flex;align-items:center;gap:5px;font-size:9px;color:#656b76;background:#f7f7fa;border-radius:9px;padding:5px 7px}.legend-dot{width:8px;height:8px;border-radius:50%;flex:none}
+.ranking{display:grid;gap:8px;margin-top:10px}.rank-row{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line);border-radius:15px;padding:11px 12px;box-shadow:var(--shadow)}.rank-num{width:22px;font-size:10px;font-weight:900;color:var(--muted)}.rank-name{flex:1;font-size:12px;font-weight:850;min-width:0}.rank-bar{width:75px;height:6px;background:#eef0f4;border-radius:99px;overflow:hidden}.rank-bar i{display:block;height:100%;background:var(--accent);border-radius:99px}.rank-value{width:42px;text-align:right;font-size:13px;font-weight:950}
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgba(255,255,255,.94);backdrop-filter:blur(20px);border-top:1px solid var(--line);padding:7px 10px calc(7px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(5,1fr)}
+.bottom-nav button{background:none;color:#9096a1;border-radius:14px;padding:7px 2px;font-size:9px;font-weight:800}.bottom-nav button.active{background:var(--accentSoft);color:var(--accent)}.bottom-nav .ico{display:block;font-size:20px;line-height:21px;margin-bottom:2px}
+.toast{position:fixed;left:50%;bottom:92px;transform:translate(-50%,15px);background:#17191f;color:#fff;padding:11px 15px;border-radius:13px;font-size:11px;font-weight:800;opacity:0;pointer-events:none;transition:.2s;z-index:100;white-space:nowrap}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media(min-width:700px){.app{padding-bottom:20px}.top{padding-left:calc((100% - 650px)/2);padding-right:calc((100% - 650px)/2)}.bottom-nav{width:500px;left:50%;right:auto;transform:translateX(-50%);border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0}.sheet{border-radius:25px}.modal-wrap{align-items:center;padding:20px}.sheet{width:min(560px,100%)}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top">
+ <div class="profile"><div class="avatar"><img src="SchoolFlow-logo.png" alt="Logo SchoolFlow"></div><div><div class="top-title">SchoolFlow</div><div class="top-sub">Il tuo spazio scolastico</div></div></div>
+ <div class="top-actions"><button class="top-btn" onclick="openGradeModal()">＋</button></div>
+</header>
+
+<main>
+<section id="home" class="page active">
+ <div class="hero"><div class="hello">PANORAMICA</div><h1>Come stai andando?</h1><p>Controlla rapidamente il tuo rendimento.</p>
+  <div class="big-average"><div class="avg-label">MEDIA GENERALE</div><div id="homeAvg" class="avg-number">—</div><div id="homeAvgInfo" class="avg-info">Aggiungi i tuoi primi voti</div><div id="homeAvgPill" class="avg-pill">0 voti</div></div>
+ </div>
+ <div class="section-title"><h2>Le tue materie</h2><button onclick="showPage('subjects')">Gestisci</button></div>
+ <div id="homeSubjects" class="subjects"></div>
+ <div class="section-title"><h2>Azioni rapide</h2></div>
+ <div class="quick-grid">
+  <button class="quick" onclick="openGradeModal()"><div class="qicon">✏️</div><b>Aggiungi voto</b><span>Registra una nuova valutazione</span></button>
+  <button class="quick" onclick="openSubjectModal()"><div class="qicon">📚</div><b>Nuova materia</b><span>Aggiungi una materia</span></button>
+  <button class="quick" onclick="showPage('averages')"><div class="qicon">📊</div><b>Le mie medie</b><span>Guarda il rendimento</span></button>
+  <button class="quick" onclick="showPage('grades')"><div class="qicon">📝</div><b>Registro voti</b><span>Vedi tutti i voti</span></button>
+ </div>
+</section>
+
+<section id="subjects" class="page">
+ <div class="page-head"><div class="eyebrow">ORGANIZZAZIONE</div><h1>Materie</h1><p>Modifica, elimina o aggiungi liberamente le tue materie.</p></div>
+ <div class="search-row"><input id="subjectSearch" class="search" placeholder="Cerca una materia..." oninput="renderSubjects()"><button class="add-btn" onclick="openSubjectModal()">＋</button></div>
+ <div id="subjectList" class="list"></div>
+</section>
+
+<section id="averages" class="page">
+ <div class="page-head"><div class="eyebrow">RENDIMENTO</div><h1>Le mie medie</h1><p>Calcolate automaticamente usando i pesi dei voti.</p></div>
+ <div class="stats-row">
+  <div class="stat"><span>MEDIA GENERALE</span><strong id="avgGeneral">—</strong></div>
+  <div class="stat"><span>VOTI TOTALI</span><strong id="avgTotal">0</strong></div>
+ </div>
+ <div id="averageList" class="avg-list"></div>
+ <div class="info-card" style="margin-top:12px">⚖️ <b>Media ponderata:</b> un voto al 100% conta normalmente, uno al 50% conta la metà e uno al 200% conta il doppio.</div>
+</section>
+
+
+<section id="statistics" class="page">
+ <div class="page-head"><div class="eyebrow">ANALISI</div><h1>Statistiche</h1><p>Scopri come stanno andando le tue materie e come cambia il rendimento nel tempo.</p></div>
+ <div class="stats-grid">
+  <div class="stat-card"><div class="stat-kicker">MIGLIORE MATERIA</div><div id="statsBestName" class="stat-title">—</div><div id="statsBestValue" class="stat-value good">—</div></div>
+  <div class="stat-card"><div class="stat-kicker">DA RECUPERARE</div><div id="statsWorstName" class="stat-title">—</div><div id="statsWorstValue" class="stat-value bad">—</div></div>
+  <div class="stat-card"><div class="stat-kicker">MEDIA GENERALE</div><div id="statsGeneral" class="stat-value">—</div><div class="stat-title">su tutti i voti</div></div>
+  <div class="stat-card"><div class="stat-kicker">SOTTO LA SUFFICIENZA</div><div id="statsBelow" class="stat-value bad">0</div><div class="stat-title">materie</div></div>
+ </div>
+ <div class="chart-card">
+  <div class="chart-head"><div><h2>Andamento nel tempo</h2><p>Media ponderata progressiva delle materie.</p></div><select id="statsFilter" class="chart-filter" onchange="renderStatistics()"><option value="all">Tutte le materie</option></select></div>
+  <div id="trendChartWrap" class="chart-wrap"></div>
+  <div id="trendLegend" class="legend"></div>
+ </div>
+ <div class="section-title"><h2>Classifica materie</h2><span>media attuale</span></div>
+ <div id="statsRanking" class="ranking"></div>
+ <div class="info-card" style="margin-top:12px">📈 <b>Come leggerlo:</b> la linea mostra come cambia la media ponderata di ogni materia dopo l'inserimento dei voti. Più è alta, meglio stai andando.</div>
+</section>
+
+<section id="subjectDetail" class="page">
+ <div class="page-head">
+   <button class="back-link" onclick="showPage('home')">‹ Indietro</button>
+   <div class="eyebrow" id="detailEyebrow">MATERIA</div>
+   <h1 id="detailTitle">Materia</h1>
+   <p id="detailSubtitle">Gestisci qui tutti i voti della materia.</p>
+ </div>
+
+ <div class="subject-detail-summary">
+   <div>
+     <span>MEDIA PONDERATA</span>
+     <strong id="detailAverage">—</strong>
+   </div>
+   <div>
+     <span>VOTI</span>
+     <strong id="detailCount">0</strong>
+   </div>
+   <button class="primary-detail" onclick="openGradeModal(currentSubjectId)">＋ Aggiungi voto</button>
+ </div>
+
+ <div class="section-title"><h2>Voti della materia</h2><span id="detailWeightInfo"></span></div>
+ <div id="detailGrades" class="list"></div>
+</section>
+
+<section id="grades" class="page">
+ <div class="page-head"><div class="eyebrow">REGISTRO</div><h1>Tutti i voti</h1><p>Il tuo storico completo delle valutazioni.</p></div>
+ <div class="search-row"><input id="gradeSearch" class="search" placeholder="Cerca..." oninput="renderGrades()"><button class="add-btn" onclick="openGradeModal()">＋</button></div>
+ <div id="gradeList" class="list"></div>
+</section>
+</main>
+
+<nav class="bottom-nav">
+ <button class="active" onclick="showPage('home',this)"><span class="ico">⌂</span>Home</button>
+ <button onclick="showPage('subjects',this)"><span class="ico">📚</span>Materie</button>
+ <button onclick="showPage('averages',this)"><span class="ico">📊</span>Medie</button>
+ <button onclick="showPage('statistics',this)"><span class="ico">📈</span>Statistiche</button>
+ <button onclick="showPage('grades',this)"><span class="ico">✓</span>Voti</button>
+</nav>
+</div>
+
+<div id="subjectModal" class="modal-wrap">
+ <div class="sheet">
+  <div class="handle"></div><div class="sheet-head"><h3 id="subjectTitle">Nuova materia</h3><button class="close" onclick="closeModal('subjectModal')">×</button></div>
+  <div class="sheet-body"><div class="form">
+   <div class="field"><label>NOME MATERIA</label><input id="subjectName" maxlength="40" placeholder="Es. Matematica"></div>
+   <div class="field"><label>ICONA</label><select id="subjectIcon"><option>📚</option><option>➗</option><option>💻</option><option>⚡</option><option>🔧</option><option>🌍</option><option>🇬🇧</option><option>🇮🇹</option><option>🧪</option><option>🎨</option><option>🏃</option><option>📐</option><option>📖</option></select></div>
+  </div></div>
+  <div class="sheet-foot"><button class="cancel" onclick="closeModal('subjectModal')">Annulla</button><button class="save" onclick="saveSubject()">Salva</button></div>
+ </div>
+</div>
+
+<div id="gradeModal" class="modal-wrap">
+ <div class="sheet">
+  <div class="handle"></div><div class="sheet-head"><h3 id="gradeModalTitle">Aggiungi voto</h3><button class="close" onclick="closeModal('gradeModal')">×</button></div>
+  <div class="sheet-body"><div class="form">
+   <div class="field"><label>MATERIA</label><select id="gradeSubject"></select></div>
+   <div class="field"><label>VOTO</label><input id="gradeValue" type="number" min="0" max="10" step=".1" placeholder="7,5" oninput="previewGrade()"></div>
+   <div class="field"><label>PESO DEL VOTO (%)</label><input id="gradeWeight" type="number" min="1" max="1000" value="100" oninput="previewGrade()"></div>
+   <div class="field"><label>TIPO</label><select id="gradeType"><option>Orale</option><option>Scritto</option><option>Pratico</option><option>Compito</option><option>Altro</option></select></div>
+   <div class="field"><label>DATA</label><input id="gradeDate" type="date"></div>
+   <div class="field"><label>NOTE</label><input id="gradeNote" maxlength="100" placeholder="Facoltativo"></div>
+   <div id="gradePreview" class="preview">Inserisci un voto per vedere il peso.</div>
+  </div></div>
+  <div class="sheet-foot"><button class="cancel" onclick="closeModal('gradeModal')">Annulla</button><button id="gradeSaveButton" class="save" onclick="saveGrade()">Aggiungi voto</button></div>
+ </div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+const KEY="schoolflow_mobile_v2";
+const DEFAULT=[
+ {id:"ttrg",name:"TTRG",icon:"🔧",grades:[]},
+ {id:"dg",name:"DG",icon:"📐",grades:[]},
+ {id:"ing",name:"ING",icon:"🇬🇧",grades:[]},
+ {id:"mat",name:"MAT",icon:"➗",grades:[]},
+ {id:"ita",name:"ITA",icon:"🇮🇹",grades:[]},
+ {id:"irc",name:"IRC/AA",icon:"📚",grades:[]},
+ {id:"sms",name:"SMS",icon:"🏃",grades:[]},
+ {id:"geo",name:"GEO",icon:"🌍",grades:[]},
+ {id:"lte",name:"LTE",icon:"⚡",grades:[]},
+ {id:"sto",name:"STO",icon:"📖",grades:[]},
+ {id:"sci",name:"SCI-INT",icon:"🧪",grades:[]},
+ {id:"tic",name:"TIC",icon:"💻",grades:[]}
+];
+let data=load(),editing=null,editingGrade=null;
+function load(){try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&Array.isArray(x.subjects))return x}catch(e){}return{subjects:JSON.parse(JSON.stringify(DEFAULT))}}
+function save(){localStorage.setItem(KEY,JSON.stringify(data))}
+function id(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function n(v,fb=0){const x=Number(v);return Number.isFinite(x)?x:fb}
+function f(v){return Number.isFinite(v)?v.toLocaleString("it-IT",{maximumFractionDigits:2}):"—"}
+function grades(){return data.subjects.flatMap(s=>(s.grades||[]).map(g=>({...g,subject:s.name,subjectId:s.id,icon:s.icon})))}
+function average(gs){if(!gs.length)return null;let t=0,w=0;gs.forEach(g=>{const weight=Math.max(1,n(g.weight,100));t+=n(g.value)*weight;w+=weight});return w?t/w:null}
+function sAvg(s){return average(s.grades||[])}
+function cls(v){return v==null?"":v>=6?"good":v>=5?"mid":"bad"}
+function showPage(page,button){
+ document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+ document.getElementById(page).classList.add("active");
+ document.querySelectorAll(".bottom-nav button").forEach(x=>x.classList.remove("active"));
+ if(button)button.classList.add("active");
+ document.querySelectorAll(".bottom-nav button").forEach(x=>{if(x.getAttribute("onclick")?.includes("'"+page+"'"))x.classList.add("active")});
+ renderAll();window.scrollTo({top:0,behavior:"smooth"});
+}
+function subjectCard(s){
+ const a=sAvg(s),count=(s.grades||[]).length;
+ return `<div class="subject" onclick="openSubjectDetail('${s.id}')"><div class="subject-icon">${s.icon}</div><div class="subject-main"><div class="subject-name">${esc(s.name)}</div><div class="subject-count">${count} ${count===1?"voto":"voti"}</div><div class="progress"><i style="width:${a==null?0:Math.max(0,Math.min(100,a*10))}%"></i></div></div><div class="subject-score"><strong class="${cls(a)}">${a==null?"—":f(a)}</strong><small>media</small></div></div>`
+}
+function renderHome(){
+ const gs=grades(),a=average(gs);
+ document.getElementById("homeAvg").textContent=a==null?"—":f(a);
+ document.getElementById("homeAvgInfo").textContent=a==null?"Aggiungi i tuoi primi voti":a>=6?"Stai andando bene":"Puoi ancora recuperare";
+ document.getElementById("homeAvgPill").textContent=`${gs.length} ${gs.length===1?"voto":"voti"}`;
+ document.getElementById("homeSubjects").innerHTML=data.subjects.map(subjectCard).join("")||`<div class="empty"><b>Nessuna materia</b>Aggiungi la prima materia.</div>`;
+}
+function renderSubjects(){
+ const q=(document.getElementById("subjectSearch")?.value||"").toLowerCase();
+ const list=data.subjects.filter(s=>s.name.toLowerCase().includes(q));
+ document.getElementById("subjectList").innerHTML=list.length?list.map(s=>`<div class="manage" onclick="openSubjectDetail('${s.id}')"><div class="subject-icon">${s.icon}</div><div class="manage-info"><strong>${esc(s.name)}</strong><small>${(s.grades||[]).length} voti · Media ${sAvg(s)==null?"—":f(sAvg(s))}</small></div><div class="actions"><button class="action" onclick="event.stopPropagation();openGradeModal('${s.id}')">＋</button><button class="action" onclick="event.stopPropagation();openSubjectModal('${s.id}')">✎</button><button class="action delete" onclick="event.stopPropagation();deleteSubject('${s.id}')">×</button></div></div>`).join(""):`<div class="empty"><b>Nessun risultato</b>Prova un altro nome.</div>`;
+}
+function renderAverages(){
+ const gs=grades(),a=average(gs);
+ document.getElementById("avgGeneral").textContent=a==null?"—":f(a);
+ document.getElementById("avgTotal").textContent=gs.length;
+ document.getElementById("averageList").innerHTML=data.subjects.map(s=>{const a=sAvg(s),c=(s.grades||[]).length;return `<div class="avg-card"><div class="avg-head"><strong>${s.icon} ${esc(s.name)}</strong><b class="${cls(a)}">${a==null?"—":f(a)}</b></div><div class="avg-meta"><span>${c} ${c===1?"voto":"voti"}</span><span>media ponderata</span></div><div class="progress"><i style="width:${a==null?0:a*10}%"></i></div></div>`}).join("");
+}
+function renderGrades(){
+ const q=(document.getElementById("gradeSearch")?.value||"").toLowerCase();
+ const gs=grades().filter(g=>`${g.subject} ${g.type} ${g.note||""}`.toLowerCase().includes(q)).sort((a,b)=>new Date(b.date)-new Date(a.date));
+ document.getElementById("gradeList").innerHTML=gs.length?gs.map(g=>{const d=g.date?new Date(g.date+"T12:00:00").toLocaleDateString("it-IT"):"—";return `<div class="grade-card"><div class="subject-icon">${g.icon}</div><div><div class="grade-subject">${esc(g.subject)}</div><div class="grade-details">${esc(g.type)} · ${d}${g.note?" · "+esc(g.note):""}</div></div><div class="grade-right"><div class="grade-value ${cls(n(g.value))}">${f(n(g.value))}</div><div class="weight">${f(n(g.weight,100))}% peso</div></div><button class="action delete" onclick="deleteGrade('${g.subjectId}','${g.id}')">×</button></div>`}).join(""):`<div class="empty"><b>Nessun voto</b>Quando inserirai un voto apparirà qui.</div>`;
+}
+
+let currentSubjectId=null;
+
+function openSubjectDetail(subjectId){
+ const s=data.subjects.find(x=>x.id===subjectId);
+ if(!s)return;
+ currentSubjectId=subjectId;
+ document.getElementById("detailEyebrow").textContent=s.icon+" MATERIA";
+ document.getElementById("detailTitle").textContent=s.name;
+ document.getElementById("detailSubtitle").textContent="Qui puoi vedere, modificare ed eliminare i voti di questa materia.";
+ document.getElementById("detailAverage").textContent=sAvg(s)==null?"—":f(sAvg(s));
+ document.getElementById("detailCount").textContent=(s.grades||[]).length;
+ const totalWeight=(s.grades||[]).reduce((t,g)=>t+n(g.weight,100),0);
+ document.getElementById("detailWeightInfo").textContent=totalWeight?`Peso totale ${f(totalWeight)}%`:"Nessun voto";
+ renderSubjectDetail();
+ showPage("subjectDetail");
+}
+
+function renderSubjectDetail(){
+ const s=data.subjects.find(x=>x.id===currentSubjectId);
+ if(!s)return;
+ const gs=(s.grades||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+ document.getElementById("detailAverage").textContent=sAvg(s)==null?"—":f(sAvg(s));
+ document.getElementById("detailCount").textContent=gs.length;
+ const totalWeight=gs.reduce((t,g)=>t+n(g.weight,100),0);
+ document.getElementById("detailWeightInfo").textContent=totalWeight?`Peso totale ${f(totalWeight)}%`:"Nessun voto";
+
+ document.getElementById("detailGrades").innerHTML=gs.length?gs.map(g=>{
+   const d=g.date?new Date(g.date+"T12:00:00").toLocaleDateString("it-IT"):"—";
+   return `<div class="grade-card">
+     <div class="grade-type-icon">${g.type==="Orale"?"🗣️":g.type==="Scritto"?"📝":g.type==="Pratico"?"🔧":"📌"}</div>
+     <div class="grade-info">
+       <div class="grade-subject">${esc(g.type)}</div>
+       <div class="grade-details">${d} · Peso ${f(n(g.weight,100))}%${g.note?" · "+esc(g.note):""}</div>
+     </div>
+     <div class="grade-right"><div class="grade-value ${cls(n(g.value))}">${f(n(g.value))}</div></div>
+     <div class="grade-actions">
+       <button class="action" onclick="editGrade('${s.id}','${g.id}')">✎</button>
+       <button class="action delete" onclick="deleteGradeFromDetail('${s.id}','${g.id}')">×</button>
+     </div>
+   </div>`;
+ }).join(""):`<div class="empty"><b>Nessun voto in ${esc(s.name)}</b>Aggiungi il primo voto con il pulsante qui sopra.</div>`;
+}
+
+function editGrade(subjectId,gradeId){
+ const s=data.subjects.find(x=>x.id===subjectId),g=s?.grades?.find(x=>x.id===gradeId);
+ if(!s||!g)return;
+ editingGrade={subjectId,gradeId};
+ const sel=document.getElementById("gradeSubject");
+ sel.innerHTML=data.subjects.map(x=>`<option value="${x.id}">${x.icon} ${esc(x.name)}</option>`).join("");
+ sel.value=subjectId;
+ document.getElementById("gradeValue").value=g.value;
+ document.getElementById("gradeWeight").value=g.weight;
+ document.getElementById("gradeType").value=g.type;
+ document.getElementById("gradeDate").value=g.date||"";
+ document.getElementById("gradeNote").value=g.note||"";
+ document.getElementById("gradeModalTitle").textContent="Modifica voto";
+ document.getElementById("gradeSaveButton").textContent="Salva modifiche";
+ previewGrade();
+ document.getElementById("gradeModal").classList.add("show");
+}
+
+function deleteGradeFromDetail(subjectId,gradeId){
+ if(!confirm("Eliminare questo voto?"))return;
+ const s=data.subjects.find(x=>x.id===subjectId);
+ if(!s)return;
+ s.grades=(s.grades||[]).filter(g=>g.id!==gradeId);
+ save();renderAll();renderSubjectDetail();toast("Voto eliminato.");
+}
+
+function getSubjectTrend(s){
+ const gs=(s.grades||[]).slice().filter(g=>g.date).sort((a,b)=>{
+   const d=new Date(a.date)-new Date(b.date); return d||String(a.id).localeCompare(String(b.id));
+ });
+ let total=0,weight=0; const points=[];
+ gs.forEach(g=>{
+   const w=Math.max(1,n(g.weight,100));
+   total+=n(g.value)*w; weight+=w;
+   points.push({date:g.date,avg:total/weight});
+ });
+ return points;
+}
+function chartColor(i){return `hsl(${(i*47+215)%360} 72% 52%)`}
+function renderStatistics(){
+ const subjectsWithGrades=data.subjects.filter(s=>(s.grades||[]).length);
+ const ranked=subjectsWithGrades.map(s=>({s,a:sAvg(s)})).sort((a,b)=>b.a-a.a);
+ const best=ranked[0],worst=ranked[ranked.length-1];
+ document.getElementById('statsBestName').textContent=best?best.s.name:'—';
+ document.getElementById('statsBestValue').textContent=best?f(best.a):'—';
+ document.getElementById('statsWorstName').textContent=worst?worst.s.name:'—';
+ document.getElementById('statsWorstValue').textContent=worst?f(worst.a):'—';
+ const all=grades(),general=average(all);
+ document.getElementById('statsGeneral').textContent=general==null?'—':f(general);
+ document.getElementById('statsBelow').textContent=ranked.filter(x=>x.a<6).length;
+ const filter=document.getElementById('statsFilter');
+ const current=filter.value;
+ filter.innerHTML='<option value="all">Tutte le materie</option>'+data.subjects.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
+ filter.value=data.subjects.some(s=>s.id===current)?current:'all';
+ const selected=filter.value==='all'?subjectsWithGrades:subjectsWithGrades.filter(s=>s.id===filter.value);
+ const wrap=document.getElementById('trendChartWrap'),legend=document.getElementById('trendLegend');
+ if(!selected.length){
+   wrap.innerHTML='<div class="chart-empty"><div><b>Nessun dato ancora</b>Aggiungi almeno un voto per vedere il tuo andamento.</div></div>';
+   legend.innerHTML='';
+ }else{
+   const dateSet=new Set(); selected.forEach(s=>getSubjectTrend(s).forEach(p=>dateSet.add(p.date)));
+   const dates=[...dateSet].sort();
+   const W=620,H=270,L=38,R=12,T=15,B=34,iw=W-L-R,ih=H-T-B;
+   const x=d=>dates.length===1?L+iw/2:L+(dates.indexOf(d)/(dates.length-1))*iw;
+   const y=v=>T+(10-v)/10*ih;
+   let svg=`<svg class="trend-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Andamento delle medie nel tempo">`;
+   [0,2,4,6,8,10].forEach(v=>{const yy=y(v);svg+=`<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="#eceef2" stroke-width="1"/><text x="4" y="${yy+3}" font-size="9" fill="#9096a1">${v}</text>`});
+   if(dates.length){
+     const tickIdx=[...new Set([0,Math.floor((dates.length-1)/2),dates.length-1])];
+     tickIdx.forEach(i=>{const xx=x(dates[i]);const label=new Date(dates[i]+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short'});svg+=`<text x="${xx}" y="${H-10}" text-anchor="middle" font-size="9" fill="#9096a1">${label}</text>`});
+   }
+   selected.forEach((s,idx)=>{
+     const pts=getSubjectTrend(s); if(!pts.length)return; const color=chartColor(data.subjects.indexOf(s));
+     const path=pts.map((p,i)=>`${i?'L':'M'} ${x(p.date).toFixed(1)} ${y(p.avg).toFixed(1)}`).join(' ');
+     svg+=`<path d="${path}" fill="none" stroke="${color}" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>`;
+     pts.forEach(p=>svg+=`<circle cx="${x(p.date).toFixed(1)}" cy="${y(p.avg).toFixed(1)}" r="3.2" fill="${color}" stroke="#fff" stroke-width="1.5"><title>${esc(s.name)} · ${f(p.avg)} · ${new Date(p.date+'T12:00:00').toLocaleDateString('it-IT')}</title></circle>`);
+   });
+   svg+='</svg>'; wrap.innerHTML=svg;
+   legend.innerHTML=selected.map(s=>{const c=chartColor(data.subjects.indexOf(s));return `<div class="legend-item"><i class="legend-dot" style="background:${c}"></i>${esc(s.name)}</div>`}).join('');
+ }
+ document.getElementById('statsRanking').innerHTML=ranked.length?ranked.map((x,i)=>`<div class="rank-row"><div class="rank-num">${i+1}</div><div class="rank-name">${x.s.icon} ${esc(x.s.name)}</div><div class="rank-bar"><i style="width:${Math.max(0,Math.min(100,x.a*10))}%"></i></div><div class="rank-value ${cls(x.a)}">${f(x.a)}</div></div>`).join(''):`<div class="empty"><b>Nessuna materia con voti</b>Inserisci i primi voti per creare le statistiche.</div>`;
+}
+function renderAll(){renderHome();renderSubjects();renderAverages();renderGrades();renderStatistics()}
+function openSubjectModal(subjectId=null){
+ editing=subjectId;
+ document.getElementById("subjectTitle").textContent=subjectId?"Modifica materia":"Nuova materia";
+ const s=data.subjects.find(x=>x.id===subjectId);
+ document.getElementById("subjectName").value=s?.name||"";
+ document.getElementById("subjectIcon").value=s?.icon||"📚";
+ document.getElementById("subjectModal").classList.add("show");
+ setTimeout(()=>document.getElementById("subjectName").focus(),80);
+}
+function saveSubject(){
+ const name=document.getElementById("subjectName").value.trim(),icon=document.getElementById("subjectIcon").value;
+ if(!name)return toast("Inserisci il nome della materia.");
+ if(editing){const s=data.subjects.find(x=>x.id===editing);s.name=name;s.icon=icon;toast("Materia modificata.");}
+ else{data.subjects.push({id:id(),name,icon,grades:[]});toast("Materia aggiunta.");}
+ save();closeModal("subjectModal");renderAll();
+}
+function deleteSubject(sid){const s=data.subjects.find(x=>x.id===sid);if(!s)return;if(!confirm(`Eliminare ${s.name} e tutti i suoi voti?`))return;data.subjects=data.subjects.filter(x=>x.id!==sid);save();renderAll();toast("Materia eliminata.")}
+function openGradeModal(subjectId=null){
+ editingGrade=null;
+ document.getElementById("gradeModalTitle").textContent="Aggiungi voto";
+ document.getElementById("gradeSaveButton").textContent="Aggiungi voto";
+ if(!data.subjects.length)return toast("Aggiungi prima una materia.");
+ const sel=document.getElementById("gradeSubject");sel.innerHTML=data.subjects.map(s=>`<option value="${s.id}">${s.icon} ${esc(s.name)}</option>`).join("");
+ if(subjectId)sel.value=subjectId;
+ document.getElementById("gradeValue").value="";document.getElementById("gradeWeight").value=100;document.getElementById("gradeType").value="Orale";document.getElementById("gradeDate").value=new Date().toISOString().slice(0,10);document.getElementById("gradeNote").value="";previewGrade();
+ document.getElementById("gradeModal").classList.add("show");setTimeout(()=>document.getElementById("gradeValue").focus(),80);
+}
+function previewGrade(){
+ const v=n(document.getElementById("gradeValue").value,NaN),w=n(document.getElementById("gradeWeight").value,100);
+ document.getElementById("gradePreview").innerHTML=Number.isFinite(v)?`Questo voto vale <strong>${f(v)} × ${f(w)}%</strong> nel calcolo della media.`:"Inserisci un voto per vedere il peso.";
+}
+function saveGrade(){
+ const sid=document.getElementById("gradeSubject").value;
+ const v=n(document.getElementById("gradeValue").value,NaN);
+ const w=n(document.getElementById("gradeWeight").value,NaN);
+ if(!Number.isFinite(v)||v<0||v>10)return toast("Inserisci un voto tra 0 e 10.");
+ if(!Number.isFinite(w)||w<1)return toast("Il peso deve essere almeno 1%.");
+ const s=data.subjects.find(x=>x.id===sid);
+ if(!s)return;
+ const gradeData={
+   value:v,
+   weight:w,
+   type:document.getElementById("gradeType").value,
+   date:document.getElementById("gradeDate").value||new Date().toISOString().slice(0,10),
+   note:document.getElementById("gradeNote").value.trim()
+ };
+ if(editingGrade){
+   const oldS=data.subjects.find(x=>x.id===editingGrade.subjectId);
+   const g=oldS?.grades?.find(x=>x.id===editingGrade.gradeId);
+   if(g){
+     if(editingGrade.subjectId!==sid){
+       oldS.grades=oldS.grades.filter(x=>x.id!==editingGrade.gradeId);
+       s.grades=s.grades||[];
+       s.grades.push({...gradeData,id:editingGrade.gradeId});
+     }else{
+       Object.assign(g,gradeData);
+     }
+   }
+   toast("Voto modificato.");
+ }else{
+   s.grades=s.grades||[];
+   s.grades.push({...gradeData,id:id()});
+   toast(`Voto ${f(v)} aggiunto a ${s.name}.`);
+ }
+ editingGrade=null;
+ save();closeModal("gradeModal");renderAll();
+ if(currentSubjectId)renderSubjectDetail();
+}
+function deleteGrade(sid,gid){const s=data.subjects.find(x=>x.id===sid);if(!s)return;if(!confirm("Eliminare questo voto?"))return;s.grades=s.grades.filter(g=>g.id!==gid);save();renderAll();toast("Voto eliminato.")}
+function closeModal(id){document.getElementById(id).classList.remove("show")}
+document.querySelectorAll(".modal-wrap").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)m.classList.remove("show")}));
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(window.tt);window.tt=setTimeout(()=>t.classList.remove("show"),2200)}
+function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+renderAll();
+</script>
+</body>
+</html>
