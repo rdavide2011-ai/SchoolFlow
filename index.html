@@ -116,7 +116,7 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
 .chart-empty b{display:block;color:var(--text);font-size:14px;margin-bottom:4px}
 .legend{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;max-height:120px;overflow:auto;padding-top:2px}.legend-item{display:flex;align-items:center;gap:5px;font-size:9px;color:#656b76;background:#f7f7fa;border-radius:9px;padding:5px 7px}.legend-dot{width:8px;height:8px;border-radius:50%;flex:none}
 .ranking{display:grid;gap:8px;margin-top:10px}.rank-row{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line);border-radius:15px;padding:11px 12px;box-shadow:var(--shadow)}.rank-num{width:22px;font-size:10px;font-weight:900;color:var(--muted)}.rank-name{flex:1;font-size:12px;font-weight:850;min-width:0}.rank-bar{width:75px;height:6px;background:#eef0f4;border-radius:99px;overflow:hidden}.rank-bar i{display:block;height:100%;background:var(--accent);border-radius:99px}.rank-value{width:42px;text-align:right;font-size:13px;font-weight:950}
-.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgba(255,255,255,.94);backdrop-filter:blur(20px);border-top:1px solid var(--line);padding:7px 10px calc(7px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(5,1fr)}
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgba(255,255,255,.94);backdrop-filter:blur(20px);border-top:1px solid var(--line);padding:7px 10px calc(7px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(6,1fr)}
 .bottom-nav button{background:none;color:#9096a1;border-radius:14px;padding:7px 2px;font-size:9px;font-weight:800}.bottom-nav button.active{background:var(--accentSoft);color:var(--accent)}.bottom-nav .ico{display:block;font-size:20px;line-height:21px;margin-bottom:2px}
 .toast{position:fixed;left:50%;bottom:92px;transform:translate(-50%,15px);background:#17191f;color:#fff;padding:11px 15px;border-radius:13px;font-size:11px;font-weight:800;opacity:0;pointer-events:none;transition:.2s;z-index:100;white-space:nowrap}
 .toast.show{opacity:1;transform:translate(-50%,0)}
@@ -210,6 +210,26 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
  <div class="search-row"><input id="gradeSearch" class="search" placeholder="Cerca..." oninput="renderGrades()"><button class="add-btn" onclick="openGradeModal()">＋</button></div>
  <div id="gradeList" class="list"></div>
 </section>
+
+ <section id="settings" class="page">
+  <div class="page-head"><div class="eyebrow">PERSONALIZZAZIONE</div><h1>Impostazioni</h1><p>Configura la suddivisione dell'anno scolastico e conserva automaticamente i tuoi risultati.</p></div>
+  <div class="info-card">⚙️ <b>Periodo scolastico</b><br>Le impostazioni vengono salvate automaticamente sul dispositivo. Quando termina un periodo, SchoolFlow archivia automaticamente i suoi voti e passa al periodo successivo.</div>
+  <div class="section-title"><h2>Gestione anno scolastico</h2><span id="currentPeriodLabel">—</span></div>
+  <div class="subject-detail-summary">
+   <div><span>PERIODO ATTUALE</span><strong id="settingsCurrentPeriod">1°</strong></div>
+   <div><span>ANNO SCOLASTICO</span><strong id="settingsSchoolYear">2026/27</strong></div>
+   <div style="grid-column:1/-1;background:#f7f7fa;border-radius:14px;padding:13px"><div class="field"><label>TIPO DI PERIODO</label><select id="periodType" onchange="saveSettings()">
+    <option value="quadrimestre">2 Quadrimestri</option>
+    <option value="trimestri">3 Trimestri</option>
+    <option value="trimestre_pentamestre">Trimestre + Pentamestre</option>
+   </select></div></div>
+   <div style="grid-column:1/-1;background:#f7f7fa;border-radius:14px;padding:13px"><div class="field"><label>FINE 1° PERIODO</label><input id="firstPeriodEnd" type="date" onchange="saveSettings()"></div></div>
+   <div style="grid-column:1/-1;background:#f7f7fa;border-radius:14px;padding:13px"><div class="field"><label id="secondPeriodEndLabel">FINE 2° PERIODO</label><input id="secondPeriodEnd" type="date" onchange="saveSettings()"></div></div>
+   <div id="thirdPeriodEndWrap" style="display:none;grid-column:1/-1;background:#f7f7fa;border-radius:14px;padding:13px"><div class="field"><label>FINE 3° PERIODO</label><input id="thirdPeriodEnd" type="date" onchange="saveSettings()"></div></div>
+  </div>
+  <div class="section-title"><h2>Storico periodi</h2><span>solo lettura</span></div>
+  <div id="historyList" class="list"></div>
+ </section>
 </main>
 
 <nav class="bottom-nav">
@@ -218,6 +238,7 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
  <button onclick="showPage('averages',this)"><span class="ico">📊</span>Medie</button>
  <button onclick="showPage('statistics',this)"><span class="ico">📈</span>Statistiche</button>
  <button onclick="showPage('grades',this)"><span class="ico">✓</span>Voti</button>
+ <button onclick="showPage('settings',this)"><span class="ico">⚙️</span>Impostazioni</button>
 </nav>
 </div>
 
@@ -247,27 +268,116 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
   <div class="sheet-foot"><button class="cancel" onclick="closeModal('gradeModal')">Annulla</button><button id="gradeSaveButton" class="save" onclick="saveGrade()">Aggiungi voto</button></div>
  </div>
 </div>
+<div id="historyModal" class="modal-wrap">
+ <div class="sheet">
+  <div class="handle"></div><div class="sheet-head"><h3 id="historyModalTitle">Storico</h3><button class="close" onclick="closeModal('historyModal')">×</button></div>
+  <div class="sheet-body"><div id="historyModalBody" class="list"></div></div>
+  <div class="sheet-foot"><button class="cancel" onclick="closeModal('historyModal')">Chiudi</button></div>
+ </div>
+</div>
 <div id="toast" class="toast"></div>
 
 <script>
 const KEY="schoolflow_mobile_v2";
 const DEFAULT=[
- {id:"ttrg",name:"TTRG",icon:"🔧",grades:[]},
- {id:"dg",name:"DG",icon:"📐",grades:[]},
- {id:"ing",name:"ING",icon:"🇬🇧",grades:[]},
- {id:"mat",name:"MAT",icon:"➗",grades:[]},
- {id:"ita",name:"ITA",icon:"🇮🇹",grades:[]},
- {id:"irc",name:"IRC/AA",icon:"📚",grades:[]},
+ {id:"mat",name:"MATE",icon:"➗",grades:[]},
+ {id:"scifis",name:"SCI-FIS",icon:"🧪",grades:[]},
  {id:"sms",name:"SMS",icon:"🏃",grades:[]},
+ {id:"ing",name:"ING",icon:"🇬🇧",grades:[]},
+ {id:"info",name:"INFO",icon:"💻",grades:[]},
+ {id:"ita",name:"ITA",icon:"🇮🇹",grades:[]},
+ {id:"ttrg",name:"TTRG",icon:"🔧",grades:[]},
  {id:"geo",name:"GEO",icon:"🌍",grades:[]},
+ {id:"irc",name:"IRC",icon:"📚",grades:[]},
  {id:"lte",name:"LTE",icon:"⚡",grades:[]},
- {id:"sto",name:"STO",icon:"📖",grades:[]},
- {id:"sci",name:"SCI-INT",icon:"🧪",grades:[]},
- {id:"tic",name:"TIC",icon:"💻",grades:[]}
+ {id:"dir",name:"DIR",icon:"📐",grades:[]}
 ];
 let data=load(),editing=null,editingGrade=null;
-function load(){try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&Array.isArray(x.subjects))return x}catch(e){}return{subjects:JSON.parse(JSON.stringify(DEFAULT))}}
+function defaultSettings(){
+ return{
+  periodType:"quadrimestre",
+  schoolYear:"2026/27",
+  firstPeriodEnd:"2027-01-31",
+  secondPeriodEnd:"2027-06-08",
+  thirdPeriodEnd:"2027-06-08",
+  currentPeriod:1
+ }
+}
+function periodConfig(type){
+ const configs={
+  quadrimestre:{
+   names:["1° quadrimestre","2° quadrimestre"],
+   labels:["Fine 1° quadrimestre","Fine 2° quadrimestre"]
+  },
+  trimestri:{
+   names:["1° trimestre","2° trimestre","3° trimestre"],
+   labels:["Fine 1° trimestre","Fine 2° trimestre","Fine 3° trimestre"]
+  },
+  trimestre_pentamestre:{
+   names:["1° trimestre","2° pentamestre"],
+   labels:["Fine 1° trimestre","Fine 2° pentamestre"]
+  }
+ };
+ return configs[type]||configs.quadrimestre;
+}
+function getPeriodEnds(s){
+ const cfg=periodConfig(s.periodType);
+ const ends=[s.firstPeriodEnd,s.secondPeriodEnd];
+ if(cfg.names.length===3)ends.push(s.thirdPeriodEnd);
+ return ends.slice(0,cfg.names.length);
+}
+function load(){
+ try{
+  const x=JSON.parse(localStorage.getItem(KEY));
+  if(x&&Array.isArray(x.subjects)){
+   x.settings=Object.assign(defaultSettings(),x.settings||{});
+   x.history=Array.isArray(x.history)?x.history:[];
+   x.subjects.forEach(s=>{s.grades=Array.isArray(s.grades)?s.grades:[]});
+   return x;
+  }
+ }catch(e){}
+ return{subjects:JSON.parse(JSON.stringify(DEFAULT)),settings:defaultSettings(),history:[]};
+}
 function save(){localStorage.setItem(KEY,JSON.stringify(data))}
+function todayISO(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+function periodLabel(p){
+ const cfg=periodConfig((data.settings||defaultSettings()).periodType);
+ return cfg.names[p-1]||cfg.names[cfg.names.length-1];
+}
+function archiveCurrentPeriod(){
+ const s=data.settings||defaultSettings(),cfg=periodConfig(s.periodType);
+ const period=s.currentPeriod||1;
+ const name=cfg.names[period-1];
+ if(!name)return false;
+ const already=data.history.some(h=>h.schoolYear===s.schoolYear&&h.period===period&&h.periodType===s.periodType);
+ if(!already){
+  data.history.push({
+   id:id(),
+   schoolYear:s.schoolYear,
+   period:period,
+   periodType:s.periodType,
+   periodName:name,
+   archivedAt:todayISO(),
+   subjects:JSON.parse(JSON.stringify(data.subjects))
+  });
+ }
+ data.subjects.forEach(sub=>sub.grades=[]);
+ s.currentPeriod=period+1;
+ save();
+ return true;
+}
+function checkAutomaticPeriod(){
+ const s=data.settings||defaultSettings(),cfg=periodConfig(s.periodType),ends=getPeriodEnds(s);
+ let changed=false;
+ while(s.currentPeriod<=cfg.names.length){
+  const end=ends[s.currentPeriod-1];
+  if(!end||todayISO()<=end)break;
+  changed=archiveCurrentPeriod();
+  if(!changed)break;
+ }
+ if(changed)save();
+ return changed;
+}
 function id(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function n(v,fb=0){const x=Number(v);return Number.isFinite(x)?x:fb}
 function f(v){return Number.isFinite(v)?v.toLocaleString("it-IT",{maximumFractionDigits:2}):"—"}
@@ -436,7 +546,53 @@ function renderStatistics(){
  }
  document.getElementById('statsRanking').innerHTML=ranked.length?ranked.map((x,i)=>`<div class="rank-row"><div class="rank-num">${i+1}</div><div class="rank-name">${x.s.icon} ${esc(x.s.name)}</div><div class="rank-bar"><i style="width:${Math.max(0,Math.min(100,x.a*10))}%"></i></div><div class="rank-value ${cls(x.a)}">${f(x.a)}</div></div>`).join(''):`<div class="empty"><b>Nessuna materia con voti</b>Inserisci i primi voti per creare le statistiche.</div>`;
 }
-function renderAll(){renderHome();renderSubjects();renderAverages();renderGrades();renderStatistics()}
+function renderSettings(){
+ const s=data.settings||defaultSettings(),cfg=periodConfig(s.periodType);
+ document.getElementById("settingsCurrentPeriod").textContent=s.currentPeriod<=cfg.names.length?`${s.currentPeriod}°`:"Completato";
+ document.getElementById("currentPeriodLabel").textContent=s.currentPeriod<=cfg.names.length?periodLabel(s.currentPeriod):"Anno scolastico completato";
+ document.getElementById("settingsSchoolYear").textContent=s.schoolYear||"2026/27";
+ document.getElementById("periodType").value=s.periodType||"quadrimestre";
+ document.getElementById("firstPeriodEnd").value=s.firstPeriodEnd||"";
+ document.getElementById("secondPeriodEnd").value=s.secondPeriodEnd||"";
+ document.getElementById("thirdPeriodEnd").value=s.thirdPeriodEnd||"";
+ document.getElementById("secondPeriodEndLabel").textContent=cfg.labels[1]||"Fine 2° periodo";
+ document.getElementById("thirdPeriodEndWrap").style.display=cfg.names.length===3?"block":"none";
+ const history=(data.history||[]).slice().sort((a,b)=>{
+  const sa=String(a.schoolYear),sb=String(b.schoolYear);
+  return sb.localeCompare(sa)||Number(b.period)-Number(a.period);
+ });
+ document.getElementById("historyList").innerHTML=history.length?history.map(h=>{
+  const total=(h.subjects||[]).reduce((n,s)=>n+(s.grades||[]).length,0);
+  return `<div class="manage" onclick="openHistory('${h.id}')"><div class="subject-icon">🗂️</div><div class="manage-info"><strong>${esc(h.periodName)} · ${esc(h.schoolYear)}</strong><small>${total} ${total===1?"voto":"voti"} archiviati · Clicca per vedere lo storico</small></div><div class="actions"><button class="action" onclick="event.stopPropagation();openHistory('${h.id}')">›</button></div></div>`;
+ }).join(""):`<div class="empty"><b>Nessun periodo archiviato</b>Quando terminerà il primo periodo, i tuoi voti verranno salvati qui automaticamente.</div>`;
+}
+function saveSettings(){
+ const s=data.settings||defaultSettings();
+ const newType=document.getElementById("periodType").value;
+ s.periodType=newType;
+ s.firstPeriodEnd=document.getElementById("firstPeriodEnd").value;
+ s.secondPeriodEnd=document.getElementById("secondPeriodEnd").value;
+ s.thirdPeriodEnd=document.getElementById("thirdPeriodEnd").value;
+ const cfg=periodConfig(s.periodType);
+ if(s.currentPeriod>cfg.names.length)s.currentPeriod=cfg.names.length;
+ data.settings=s;save();checkAutomaticPeriod();renderAll();toast("Impostazioni salvate.");
+}
+function openHistory(historyId){
+ const h=(data.history||[]).find(x=>x.id===historyId);if(!h)return;
+ document.getElementById("historyModalTitle").textContent=`${h.periodName} · ${h.schoolYear}`;
+ const rows=[];
+ (h.subjects||[]).forEach(s=>{
+  const a=average(s.grades||[]),gs=(s.grades||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if(!gs.length)return;
+  rows.push(`<div class="avg-card"><div class="avg-head"><strong>${s.icon} ${esc(s.name)}</strong><b class="${cls(a)}">${a==null?"—":f(a)}</b></div><div class="avg-meta"><span>${gs.length} ${gs.length===1?"voto":"voti"}</span><span>media ponderata</span></div>${gs.map(g=>{const d=g.date?new Date(g.date+"T12:00:00").toLocaleDateString("it-IT"):"—";return `<div style="display:flex;align-items:center;gap:10px;padding-top:10px;margin-top:10px;border-top:1px solid var(--line)"><div style="flex:1"><b>${esc(g.type)}</b><div class="grade-details">${d}${g.note?" · "+esc(g.note):""} · Peso ${f(n(g.weight,100))}%</div></div><div class="grade-value ${cls(n(g.value))}">${f(n(g.value))}</div></div>`}).join("")}</div>`);
+ });
+ document.getElementById("historyModalBody").innerHTML=rows.length?rows.join(""):`<div class="empty"><b>Nessun voto</b>Non risultano voti archiviati in questo periodo.</div>`;
+ document.getElementById("historyModal").classList.add("show");
+}
+function renderAll(){
+ checkAutomaticPeriod();
+ renderHome();renderSubjects();renderAverages();renderGrades();renderStatistics();renderSettings();
+}
 function openSubjectModal(subjectId=null){
  editing=subjectId;
  document.getElementById("subjectTitle").textContent=subjectId?"Modifica materia":"Nuova materia";
@@ -510,6 +666,7 @@ function closeModal(id){document.getElementById(id).classList.remove("show")}
 document.querySelectorAll(".modal-wrap").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)m.classList.remove("show")}));
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(window.tt);window.tt=setTimeout(()=>t.classList.remove("show"),2200)}
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+checkAutomaticPeriod();
 renderAll();
 </script>
 </body>
