@@ -20,6 +20,7 @@
 <meta name="twitter:image" content="SchoolFlow-logo.png">
 <link rel="icon" type="image/png" sizes="1024x1024" href="SchoolFlow-logo.png">
 <link rel="apple-touch-icon" sizes="1024x1024" href="SchoolFlow-logo.png">
+<link rel="manifest" href="/manifest.webmanifest">
 <title>SchoolFlow</title>
 <style>
 :root{
@@ -968,6 +969,10 @@ function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
 checkAutomaticPeriod();
 renderAll();
+// Funzionamento offline: registra il service worker (non tocca i voti salvati)
+if("serviceWorker" in navigator&&location.protocol!=="file:"){
+ window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));
+}
 window.addEventListener("resize",()=>{clearTimeout(window.rt);window.rt=setTimeout(()=>{if(document.getElementById("statistics").classList.contains("active"))renderStatistics()},150)});
 </script>
 </body>
