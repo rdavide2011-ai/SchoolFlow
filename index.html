@@ -130,6 +130,9 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
 .pchip:disabled{opacity:.45;box-shadow:none;cursor:default}
 .period-note{background:#fff7e8;border:1px solid #f6dfb4;color:#8a5a00;border-radius:13px;padding:10px 12px;font-size:11px;display:flex;align-items:center;justify-content:space-between;gap:8px}
 .period-note button{background:#fff;color:var(--accent);border-radius:9px;padding:7px 9px;font-size:11px;font-weight:850;flex:none}
+.backup-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+.backup-btn{background:#fff;border:1px solid var(--line);color:var(--text);border-radius:14px;padding:14px 10px;font-weight:850;font-size:13px;box-shadow:var(--shadow)}
+.backup-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 @media(min-width:700px){.app{padding-bottom:20px}.top{padding-left:calc((100% - 650px)/2);padding-right:calc((100% - 650px)/2)}.bottom-nav{width:500px;left:50%;right:auto;transform:translateX(-50%);border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0}.sheet{border-radius:25px}.modal-wrap{align-items:center;padding:20px}.sheet{width:min(560px,100%)}}
 </style>
 </head>
@@ -240,6 +243,13 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
   </div>
   <div class="section-title"><h2>Storico periodi</h2><span>solo lettura</span></div>
   <div id="historyList" class="list"></div>
+  <div class="section-title"><h2>Backup</h2><span id="lastBackupLabel">mai fatto</span></div>
+  <div class="info-card">💾 <b>Salva i tuoi voti in un file.</b> Il backup contiene materie, voti, periodi archiviati e impostazioni. Importandolo su un altro telefono le materie già presenti vengono unite (nessun doppione) e quelle mancanti vengono aggiunte.</div>
+  <div class="backup-row">
+   <button class="backup-btn primary" onclick="exportBackup()">⬆︎ Esporta backup</button>
+   <button class="backup-btn" onclick="document.getElementById('importFile').click()">⬇︎ Importa backup</button>
+  </div>
+  <input id="importFile" type="file" accept=".json,application/json,text/plain" style="display:none" onchange="importBackup(this)">
  </section>
 </main>
 
@@ -633,6 +643,7 @@ function renderSettings(){
  document.getElementById("settingsCurrentPeriod").textContent=s.currentPeriod<=cfg.names.length?`${s.currentPeriod}°`:"Completato";
  document.getElementById("currentPeriodLabel").textContent=s.currentPeriod<=cfg.names.length?periodLabel(s.currentPeriod):"Anno scolastico completato";
  document.getElementById("settingsSchoolYear").textContent=s.schoolYear||"2026/27";
+ document.getElementById("lastBackupLabel").textContent=data.lastBackup?"ultimo: "+new Date(data.lastBackup+"T12:00:00").toLocaleDateString("it-IT"):"mai fatto";
  document.getElementById("periodType").value=s.periodType||"quadrimestre";
  document.getElementById("firstPeriodEnd").value=s.firstPeriodEnd||"";
  document.getElementById("secondPeriodEnd").value=s.secondPeriodEnd||"";
@@ -677,6 +688,125 @@ function openHistory(historyId){
  });
  document.getElementById("historyModalBody").innerHTML=rows.length?rows.join(""):`<div class="empty"><b>Nessun voto</b>Non risultano voti archiviati in questo periodo.</div>`;
  document.getElementById("historyModal").classList.add("show");
+}
+// ================= BACKUP =================
+function exportBackup(){
+ const payload={app:"SchoolFlow",version:1,exportedAt:new Date().toISOString(),data:data};
+ const json=JSON.stringify(payload,null,2);
+ const name=`SchoolFlow-backup-${todayISO()}.json`;
+ const done=()=>{data.lastBackup=todayISO();save();renderSettings();toast("Backup esportato.")};
+ let file=null;
+ try{file=new File([json],name,{type:"application/json"})}catch(e){}
+ // Su iPhone apre il menu di condivisione (Salva su File, AirDrop, WhatsApp...)
+ if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
+  navigator.share({files:[file],title:"Backup SchoolFlow"}).then(done).catch(e=>{if(e&&e.name!=="AbortError")downloadFile(json,name,done)});
+  return;
+ }
+ downloadFile(json,name,done);
+}
+function downloadFile(text,name,done){
+ const url=URL.createObjectURL(new Blob([text],{type:"application/json"}));
+ const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),4000);if(done)done();
+}
+// --- pulizia dei dati importati (evita valori non validi o codice nel file)
+function safeId(v){v=String(v??"");return /^[A-Za-z0-9_-]{1,40}$/.test(v)?v:id()}
+function safeIcon(v){v=String(v??"");return v&&v.length<=8&&!/[<>"'&`]/.test(v)?v:"📚"}
+function cleanGrade(g){
+ const value=parseNum(g?.value),weight=parseNum(g?.weight);
+ if(!Number.isFinite(value)||value<0||value>10)return null;
+ const date=/^\d{4}-\d{2}-\d{2}$/.test(String(g?.date||""))?g.date:todayISO();
+ return{value,weight:Number.isFinite(weight)&&weight>=1&&weight<=1000?weight:100,type:String(g?.type||"Altro").slice(0,20),date,note:String(g?.note||"").slice(0,100),id:safeId(g?.id)};
+}
+function cleanSubjects(list){
+ return (Array.isArray(list)?list:[]).filter(s=>s&&String(s.name||"").trim()).map(s=>({
+  id:safeId(s.id),name:String(s.name).trim().slice(0,40),icon:safeIcon(s.icon),
+  grades:(Array.isArray(s.grades)?s.grades:[]).map(cleanGrade).filter(Boolean)
+ }));
+}
+const validType=t=>["quadrimestre","trimestri","trimestre_pentamestre"].includes(t)?t:"quadrimestre";
+const normName=v=>String(v||"").trim().toLowerCase().replace(/\s+/g," ");
+const sameGrade=(a,b)=>a.value===b.value&&a.date===b.date&&a.type===b.type&&a.weight===b.weight&&(a.note||"")===(b.note||"");
+// Unisce le materie importate in una lista: stessa materia (stesso id o stesso nome) -> unisce i voti, altrimenti la aggiunge
+function mergeSubjects(target,incoming,st){
+ incoming.forEach(inc=>{
+  let t=target.find(x=>x.id===inc.id)||target.find(x=>normName(x.name)===normName(inc.name));
+  if(!t){
+   if(target.some(x=>x.id===inc.id))inc.id=id();
+   target.push(inc);st.newSubjects++;st.addedGrades+=inc.grades.length;return;
+  }
+  t.grades=t.grades||[];
+  inc.grades.forEach(g=>{
+   const sameId=t.grades.find(x=>x.id===g.id);
+   if(sameId){if(!sameGrade(sameId,g)){Object.assign(sameId,g);st.updatedGrades++}return}
+   if(t.grades.some(x=>sameGrade(x,g)))return; // voto identico già presente
+   if(target.some(s=>(s.grades||[]).some(x=>x.id===g.id)))g.id=id();
+   t.grades.push(g);st.addedGrades++;
+  });
+ });
+}
+function importBackup(input){
+ const file=input.files&&input.files[0];input.value="";
+ if(!file)return;
+ const reader=new FileReader();
+ reader.onload=()=>{
+  let raw;
+  try{raw=JSON.parse(reader.result)}catch(e){return toast("File non valido: non è un backup SchoolFlow.")}
+  const src=raw&&raw.data&&Array.isArray(raw.data.subjects)?raw.data:raw;
+  if(!src||!Array.isArray(src.subjects))return toast("File non valido: non è un backup SchoolFlow.");
+  const merged=JSON.parse(JSON.stringify(data));
+  const st={newSubjects:0,addedGrades:0,updatedGrades:0,newPeriods:0};
+  const localEmpty=!grades(data.subjects).length&&!(data.history||[]).length;
+  const inSettings=Object.assign(defaultSettings(),src.settings||{});
+  // Telefono nuovo/vuoto: prendo anche le impostazioni dei periodi dal backup
+  if(localEmpty&&src.settings){
+   const d=defaultSettings(),okDate=v=>/^\d{4}-\d{2}-\d{2}$/.test(String(v||""));
+   merged.settings={periodType:validType(inSettings.periodType),schoolYear:String(inSettings.schoolYear||d.schoolYear).slice(0,9),
+    firstPeriodEnd:okDate(inSettings.firstPeriodEnd)?inSettings.firstPeriodEnd:d.firstPeriodEnd,
+    secondPeriodEnd:okDate(inSettings.secondPeriodEnd)?inSettings.secondPeriodEnd:d.secondPeriodEnd,
+    thirdPeriodEnd:okDate(inSettings.thirdPeriodEnd)?inSettings.thirdPeriodEnd:d.thirdPeriodEnd,
+    currentPeriod:Math.max(1,parseInt(inSettings.currentPeriod)||1)};
+  }
+  const ms=merged.settings;
+  const findArchive=(year,period,type)=>merged.history.find(h=>h.schoolYear===year&&Number(h.period)===Number(period)&&h.periodType===type);
+  // 1) periodi archiviati del backup
+  (Array.isArray(src.history)?src.history:[]).forEach(h=>{
+   if(!h)return;
+   const subs=cleanSubjects(h.subjects);
+   let a=findArchive(h.schoolYear,h.period,h.periodType);
+   if(!a){
+    a={id:safeId(h.id),schoolYear:String(h.schoolYear||ms.schoolYear).slice(0,9),period:Math.max(1,parseInt(h.period)||1),periodType:validType(h.periodType),periodName:String(h.periodName||"Periodo").slice(0,30),archivedAt:/^\d{4}-\d{2}-\d{2}$/.test(String(h.archivedAt||""))?h.archivedAt:todayISO(),subjects:[]};
+    if(merged.history.some(x=>x.id===a.id))a.id=id();
+    merged.history.push(a);st.newPeriods++;
+   }
+   a.subjects=a.subjects||[];
+   mergeSubjects(a.subjects,subs,st);
+  });
+  // 2) voti "in corso" del backup: se quel periodo qui è già concluso vanno nel suo archivio, altrimenti nel periodo attuale
+  const curSubs=cleanSubjects(src.subjects);
+  const samePlan=inSettings.schoolYear===ms.schoolYear&&inSettings.periodType===ms.periodType;
+  const bp=Math.max(1,parseInt(inSettings.currentPeriod)||1);
+  if(samePlan&&bp<ms.currentPeriod&&grades(curSubs).length){
+   let a=findArchive(ms.schoolYear,bp,ms.periodType);
+   if(!a){a={id:id(),schoolYear:ms.schoolYear,period:bp,periodType:ms.periodType,periodName:periodConfig(ms.periodType).names[bp-1]||"Periodo",archivedAt:todayISO(),subjects:[]};merged.history.push(a);st.newPeriods++}
+   mergeSubjects(a.subjects,curSubs,st);
+   // le materie restano comunque disponibili anche nel periodo attuale
+   mergeSubjects(merged.subjects,curSubs.map(s=>({...s,grades:[]})),{newSubjects:0,addedGrades:0,updatedGrades:0});
+  }else{
+   mergeSubjects(merged.subjects,curSubs,st);
+  }
+  if(!st.newSubjects&&!st.addedGrades&&!st.updatedGrades&&!st.newPeriods&&!localEmpty)return toast("Questo backup è già tutto presente.");
+  const tot=grades(curSubs).length+(Array.isArray(src.history)?src.history:[]).reduce((t,h)=>t+grades(cleanSubjects(h?.subjects)).length,0);
+  const msg=`Backup del ${raw.exportedAt?new Date(raw.exportedAt).toLocaleDateString("it-IT"):"—"} · ${tot} voti nel file.\n\n`+
+   `• Materie nuove: ${st.newSubjects}\n• Voti aggiunti: ${st.addedGrades}\n• Voti aggiornati: ${st.updatedGrades}\n• Periodi archiviati aggiunti: ${st.newPeriods}\n\n`+
+   `I voti già presenti su questo telefono non vengono cancellati. Importare?`;
+  if(!confirm(msg))return toast("Importazione annullata.");
+  try{localStorage.setItem(KEY+"_before_import",JSON.stringify(data))}catch(e){}
+  data=merged;viewPeriodId=null;
+  if(save()){renderAll();toast(`Importati ${st.addedGrades} voti, ${st.newSubjects} materie nuove.`)}
+ };
+ reader.onerror=()=>toast("Impossibile leggere il file.");
+ reader.readAsText(file);
 }
 function renderAll(){
  checkAutomaticPeriod();
