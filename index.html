@@ -120,6 +120,16 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
 .bottom-nav button{background:none;color:#9096a1;border-radius:14px;padding:7px 2px;font-size:9px;font-weight:800}.bottom-nav button.active{background:var(--accentSoft);color:var(--accent)}.bottom-nav .ico{display:block;font-size:20px;line-height:21px;margin-bottom:2px}
 .toast{position:fixed;left:50%;bottom:92px;transform:translate(-50%,15px);background:#17191f;color:#fff;padding:11px 15px;border-radius:13px;font-size:11px;font-weight:800;opacity:0;pointer-events:none;transition:.2s;z-index:100;white-space:nowrap}
 .toast.show{opacity:1;transform:translate(-50%,0)}
+.period-bar{display:flex;flex-direction:column;gap:8px;padding-top:10px}
+.period-chips{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;padding:2px 2px 8px}
+.period-chips::-webkit-scrollbar{display:none}
+.pchip{flex:none;background:#fff;border:1px solid var(--line);border-radius:13px;padding:8px 13px;font-size:12px;font-weight:850;color:var(--text);box-shadow:0 2px 6px rgba(25,28,38,.05);text-align:left}
+.pchip small{display:block;font-size:9px;color:var(--muted);font-weight:800;margin-top:2px;letter-spacing:.3px}
+.pchip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pchip.active small{color:#e3dcff}
+.pchip:disabled{opacity:.45;box-shadow:none;cursor:default}
+.period-note{background:#fff7e8;border:1px solid #f6dfb4;color:#8a5a00;border-radius:13px;padding:10px 12px;font-size:11px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.period-note button{background:#fff;color:var(--accent);border-radius:9px;padding:7px 9px;font-size:11px;font-weight:850;flex:none}
 @media(min-width:700px){.app{padding-bottom:20px}.top{padding-left:calc((100% - 650px)/2);padding-right:calc((100% - 650px)/2)}.bottom-nav{width:500px;left:50%;right:auto;transform:translateX(-50%);border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0}.sheet{border-radius:25px}.modal-wrap{align-items:center;padding:20px}.sheet{width:min(560px,100%)}}
 </style>
 </head>
@@ -131,8 +141,9 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
 </header>
 
 <main>
+<div id="periodBar" class="period-bar"></div>
 <section id="home" class="page active">
- <div class="hero"><div class="hello">PANORAMICA</div><h1>Come stai andando?</h1><p>Controlla rapidamente il tuo rendimento.</p>
+ <div class="hero"><div id="homeHello" class="hello">PANORAMICA</div><h1>Come stai andando?</h1><p>Controlla rapidamente il tuo rendimento.</p>
   <div class="big-average"><div class="avg-label">MEDIA GENERALE</div><div id="homeAvg" class="avg-number">—</div><div id="homeAvgInfo" class="avg-info">Aggiungi i tuoi primi voti</div><div id="homeAvgPill" class="avg-pill">0 voti</div></div>
  </div>
  <div class="section-title"><h2>Le tue materie</h2><button onclick="showPage('subjects')">Gestisci</button></div>
@@ -198,7 +209,7 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
      <span>VOTI</span>
      <strong id="detailCount">0</strong>
    </div>
-   <button class="primary-detail" onclick="openGradeModal(currentSubjectId)">＋ Aggiungi voto</button>
+   <button id="detailAddButton" class="primary-detail" onclick="openGradeModal(currentSubjectId)">＋ Aggiungi voto</button>
  </div>
 
  <div class="section-title"><h2>Voti della materia</h2><span id="detailWeightInfo"></span></div>
@@ -213,7 +224,7 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
 
  <section id="settings" class="page">
   <div class="page-head"><div class="eyebrow">PERSONALIZZAZIONE</div><h1>Impostazioni</h1><p>Configura la suddivisione dell'anno scolastico e conserva automaticamente i tuoi risultati.</p></div>
-  <div class="info-card">⚙️ <b>Periodo scolastico</b><br>Le impostazioni vengono salvate automaticamente sul dispositivo. Quando termina un periodo, SchoolFlow archivia automaticamente i suoi voti e passa al periodo successivo.</div>
+  <div class="info-card">⚙️ <b>Periodo scolastico</b><br>Le impostazioni vengono salvate automaticamente sul dispositivo. Quando termina un periodo (es. il trimestre) non si cancella nulla: le materie restano, i voti di quel periodo vengono conservati e SchoolFlow passa al periodo successivo. Puoi rivederli quando vuoi dalla barra dei periodi in alto nella Home.</div>
   <div class="section-title"><h2>Gestione anno scolastico</h2><span id="currentPeriodLabel">—</span></div>
   <div class="subject-detail-summary">
    <div><span>PERIODO ATTUALE</span><strong id="settingsCurrentPeriod">1°</strong></div>
@@ -314,8 +325,8 @@ function periodConfig(type){
    labels:["Fine 1° trimestre","Fine 2° trimestre","Fine 3° trimestre"]
   },
   trimestre_pentamestre:{
-   names:["1° trimestre","2° pentamestre"],
-   labels:["Fine 1° trimestre","Fine 2° pentamestre"]
+   names:["Trimestre","Pentamestre"],
+   labels:["Fine trimestre","Fine pentamestre"]
   }
  };
  return configs[type]||configs.quadrimestre;
@@ -409,7 +420,41 @@ function checkAutomaticPeriod(){
 function id(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function n(v,fb=0){const x=Number(v);return Number.isFinite(x)?x:fb}
 function f(v){return Number.isFinite(v)?v.toLocaleString("it-IT",{maximumFractionDigits:2}):"—"}
-function grades(){return data.subjects.flatMap(s=>(s.grades||[]).map(g=>({...g,subject:s.name,subjectId:s.id,icon:s.icon})))}
+function grades(list=data.subjects){return list.flatMap(s=>(s.grades||[]).map(g=>({...g,subject:s.name,subjectId:s.id,icon:s.icon})))}
+// ---- Periodo visualizzato: null = periodo in corso, altrimenti id di un periodo archiviato (sola lettura)
+let viewPeriodId=null;
+function viewEntry(){return viewPeriodId?(data.history||[]).find(h=>h.id===viewPeriodId)||null:null}
+function isArchiveView(){return !!viewEntry()}
+function viewSubjects(){const h=viewEntry();return h?(h.subjects||[]):data.subjects}
+function viewGrades(){return grades(viewSubjects())}
+function currentPeriodName(){
+ const s=data.settings||defaultSettings(),cfg=periodConfig(s.periodType);
+ return s.currentPeriod<=cfg.names.length?cfg.names[s.currentPeriod-1]:"Fine anno";
+}
+function viewPeriodName(){const h=viewEntry();return h?h.periodName:currentPeriodName()}
+function setViewPeriod(pid){
+ viewPeriodId=pid||null;
+ const page=document.querySelector(".page.active")?.id;
+ renderAll();
+ if(page==="subjectDetail"&&!renderSubjectDetail())showPage(lastPage||"home");
+}
+function renderPeriodBar(){
+ const bar=document.getElementById("periodBar");
+ if(!viewEntry())viewPeriodId=null;
+ const page=document.querySelector(".page.active")?.id;
+ if(page==="subjects"||page==="settings"){bar.style.display="none";return}
+ bar.style.display="";
+ const s=data.settings||defaultSettings(),cfg=periodConfig(s.periodType);
+ const archived=(data.history||[]).filter(h=>h.schoolYear===s.schoolYear)
+  .sort((a,b)=>Number(a.period)-Number(b.period)||String(a.archivedAt).localeCompare(String(b.archivedAt)));
+ const count=list=>grades(list).length;
+ let html=archived.map(h=>{const c=count(h.subjects||[]);return `<button class="pchip${viewPeriodId===h.id?" active":""}" onclick="setViewPeriod('${h.id}')">${esc(h.periodName)}<small>CONCLUSO · ${c} ${c===1?"VOTO":"VOTI"}</small></button>`}).join("");
+ html+=`<button class="pchip${viewPeriodId?"":" active"}" onclick="setViewPeriod(null)">${esc(currentPeriodName())}<small>IN CORSO</small></button>`;
+ if(s.currentPeriod<cfg.names.length)html+=cfg.names.slice(s.currentPeriod).map(nm=>`<button class="pchip" disabled>${esc(nm)}<small>DA INIZIARE</small></button>`).join("");
+ const h=viewEntry();
+ const note=h?`<div class="period-note"><span>📂 Stai guardando i voti del <b>${esc(h.periodName)}</b> · sola lettura</span><button onclick="setViewPeriod(null)">Torna a ${esc(currentPeriodName())}</button></div>`:"";
+ bar.innerHTML=`<div class="period-chips">${html}</div>${note}`;
+}
 function average(gs){if(!gs.length)return null;let t=0,w=0;gs.forEach(g=>{const weight=Math.max(1,n(g.weight,100));t+=n(g.value)*weight;w+=weight});return w?t/w:null}
 function sAvg(s){return average(s.grades||[])}
 function cls(v){return v==null?"":v>=6?"good":v>=5?"mid":"bad"}
@@ -430,49 +475,50 @@ function subjectCard(s){
  return `<div class="subject" onclick="openSubjectDetail('${s.id}')"><div class="subject-icon">${s.icon}</div><div class="subject-main"><div class="subject-name">${esc(s.name)}</div><div class="subject-count">${count} ${count===1?"voto":"voti"}</div><div class="progress"><i style="width:${a==null?0:Math.max(0,Math.min(100,a*10))}%"></i></div></div><div class="subject-score"><strong class="${cls(a)}">${a==null?"—":f(a)}</strong><small>media</small></div></div>`
 }
 function renderHome(){
- const gs=grades(),a=average(gs);
+ const gs=viewGrades(),a=average(gs);
+ document.getElementById("homeHello").textContent="PANORAMICA · "+viewPeriodName().toUpperCase();
  document.getElementById("homeAvg").textContent=a==null?"—":f(a);
  document.getElementById("homeAvgInfo").textContent=a==null?"Aggiungi i tuoi primi voti":a>=6?"Stai andando bene":"Puoi ancora recuperare";
  document.getElementById("homeAvgPill").textContent=`${gs.length} ${gs.length===1?"voto":"voti"}`;
- document.getElementById("homeSubjects").innerHTML=data.subjects.map(subjectCard).join("")||`<div class="empty"><b>Nessuna materia</b>Aggiungi la prima materia.</div>`;
+ document.getElementById("homeSubjects").innerHTML=viewSubjects().map(subjectCard).join("")||`<div class="empty"><b>Nessuna materia</b>Aggiungi la prima materia.</div>`;
 }
 function renderSubjects(){
  const q=(document.getElementById("subjectSearch")?.value||"").toLowerCase();
  const list=data.subjects.filter(s=>s.name.toLowerCase().includes(q));
- document.getElementById("subjectList").innerHTML=list.length?list.map(s=>`<div class="manage" onclick="openSubjectDetail('${s.id}')"><div class="subject-icon">${s.icon}</div><div class="manage-info"><strong>${esc(s.name)}</strong><small>${(s.grades||[]).length} voti · Media ${sAvg(s)==null?"—":f(sAvg(s))}</small></div><div class="actions"><button class="action" onclick="event.stopPropagation();openGradeModal('${s.id}')">＋</button><button class="action" onclick="event.stopPropagation();openSubjectModal('${s.id}')">✎</button><button class="action delete" onclick="event.stopPropagation();deleteSubject('${s.id}')">×</button></div></div>`).join(""):`<div class="empty"><b>Nessun risultato</b>Prova un altro nome.</div>`;
+ document.getElementById("subjectList").innerHTML=list.length?list.map(s=>`<div class="manage" onclick="openSubjectDetail('${s.id}',true)"><div class="subject-icon">${s.icon}</div><div class="manage-info"><strong>${esc(s.name)}</strong><small>${(s.grades||[]).length} voti · Media ${sAvg(s)==null?"—":f(sAvg(s))}</small></div><div class="actions"><button class="action" onclick="event.stopPropagation();openGradeModal('${s.id}')">＋</button><button class="action" onclick="event.stopPropagation();openSubjectModal('${s.id}')">✎</button><button class="action delete" onclick="event.stopPropagation();deleteSubject('${s.id}')">×</button></div></div>`).join(""):`<div class="empty"><b>Nessun risultato</b>Prova un altro nome.</div>`;
 }
 function renderAverages(){
- const gs=grades(),a=average(gs);
+ const gs=viewGrades(),a=average(gs);
  document.getElementById("avgGeneral").textContent=a==null?"—":f(a);
  document.getElementById("avgTotal").textContent=gs.length;
- document.getElementById("averageList").innerHTML=data.subjects.map(s=>{const a=sAvg(s),c=(s.grades||[]).length;return `<div class="avg-card"><div class="avg-head"><strong>${s.icon} ${esc(s.name)}</strong><b class="${cls(a)}">${a==null?"—":f(a)}</b></div><div class="avg-meta"><span>${c} ${c===1?"voto":"voti"}</span><span>media ponderata</span></div><div class="progress"><i style="width:${a==null?0:a*10}%"></i></div></div>`}).join("");
+ document.getElementById("averageList").innerHTML=viewSubjects().map(s=>{const a=sAvg(s),c=(s.grades||[]).length;return `<div class="avg-card"><div class="avg-head"><strong>${s.icon} ${esc(s.name)}</strong><b class="${cls(a)}">${a==null?"—":f(a)}</b></div><div class="avg-meta"><span>${c} ${c===1?"voto":"voti"}</span><span>media ponderata</span></div><div class="progress"><i style="width:${a==null?0:a*10}%"></i></div></div>`}).join("");
 }
 function renderGrades(){
  const q=(document.getElementById("gradeSearch")?.value||"").toLowerCase();
- const gs=grades().filter(g=>`${g.subject} ${g.type} ${g.note||""}`.toLowerCase().includes(q)).sort((a,b)=>new Date(b.date)-new Date(a.date));
- document.getElementById("gradeList").innerHTML=gs.length?gs.map(g=>{const d=g.date?new Date(g.date+"T12:00:00").toLocaleDateString("it-IT"):"—";return `<div class="grade-card"><div class="subject-icon">${g.icon}</div><div><div class="grade-subject">${esc(g.subject)}</div><div class="grade-details">${esc(g.type)} · ${d}${g.note?" · "+esc(g.note):""}</div></div><div class="grade-right"><div class="grade-value ${cls(n(g.value))}">${f(n(g.value))}</div><div class="weight">${f(n(g.weight,100))}% peso</div></div><button class="action delete" onclick="deleteGrade('${g.subjectId}','${g.id}')">×</button></div>`}).join(""):`<div class="empty"><b>Nessun voto</b>Quando inserirai un voto apparirà qui.</div>`;
+ const ro=isArchiveView();
+ const gs=viewGrades().filter(g=>`${g.subject} ${g.type} ${g.note||""}`.toLowerCase().includes(q)).sort((a,b)=>new Date(b.date)-new Date(a.date));
+ document.getElementById("gradeList").innerHTML=gs.length?gs.map(g=>{const d=g.date?new Date(g.date+"T12:00:00").toLocaleDateString("it-IT"):"—";return `<div class="grade-card"><div class="subject-icon">${g.icon}</div><div><div class="grade-subject">${esc(g.subject)}</div><div class="grade-details">${esc(g.type)} · ${d}${g.note?" · "+esc(g.note):""}</div></div><div class="grade-right"><div class="grade-value ${cls(n(g.value))}">${f(n(g.value))}</div><div class="weight">${f(n(g.weight,100))}% peso</div></div>${ro?"":`<button class="action delete" onclick="deleteGrade('${g.subjectId}','${g.id}')">×</button>`}</div>`}).join(""):`<div class="empty"><b>Nessun voto</b>Quando inserirai un voto apparirà qui.</div>`;
 }
 
 let currentSubjectId=null;
 
-function openSubjectDetail(subjectId){
- const s=data.subjects.find(x=>x.id===subjectId);
+function openSubjectDetail(subjectId,forceCurrent){
+ if(forceCurrent&&viewPeriodId){viewPeriodId=null}
+ const s=viewSubjects().find(x=>x.id===subjectId);
  if(!s)return;
  currentSubjectId=subjectId;
- document.getElementById("detailEyebrow").textContent=s.icon+" MATERIA";
- document.getElementById("detailTitle").textContent=s.name;
- document.getElementById("detailSubtitle").textContent="Qui puoi vedere, modificare ed eliminare i voti di questa materia.";
- document.getElementById("detailAverage").textContent=sAvg(s)==null?"—":f(sAvg(s));
- document.getElementById("detailCount").textContent=(s.grades||[]).length;
- const totalWeight=(s.grades||[]).reduce((t,g)=>t+n(g.weight,100),0);
- document.getElementById("detailWeightInfo").textContent=totalWeight?`Peso totale ${f(totalWeight)}%`:"Nessun voto";
  renderSubjectDetail();
  showPage("subjectDetail");
 }
 
 function renderSubjectDetail(){
- const s=data.subjects.find(x=>x.id===currentSubjectId);
- if(!s)return;
+ const s=viewSubjects().find(x=>x.id===currentSubjectId);
+ if(!s)return false;
+ const ro=isArchiveView();
+ document.getElementById("detailEyebrow").textContent=s.icon+" MATERIA · "+viewPeriodName().toUpperCase();
+ document.getElementById("detailTitle").textContent=s.name;
+ document.getElementById("detailSubtitle").textContent=ro?"Voti di un periodo concluso: puoi solo consultarli.":"Qui puoi vedere, modificare ed eliminare i voti di questa materia.";
+ document.getElementById("detailAddButton").style.display=ro?"none":"";
  const gs=(s.grades||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
  document.getElementById("detailAverage").textContent=sAvg(s)==null?"—":f(sAvg(s));
  document.getElementById("detailCount").textContent=gs.length;
@@ -488,12 +534,13 @@ function renderSubjectDetail(){
        <div class="grade-details">${d} · Peso ${f(n(g.weight,100))}%${g.note?" · "+esc(g.note):""}</div>
      </div>
      <div class="grade-right"><div class="grade-value ${cls(n(g.value))}">${f(n(g.value))}</div></div>
-     <div class="grade-actions">
+     ${ro?"":`<div class="grade-actions">
        <button class="action" onclick="editGrade('${s.id}','${g.id}')">✎</button>
        <button class="action delete" onclick="deleteGradeFromDetail('${s.id}','${g.id}')">×</button>
-     </div>
+     </div>`}
    </div>`;
- }).join(""):`<div class="empty"><b>Nessun voto in ${esc(s.name)}</b>Aggiungi il primo voto con il pulsante qui sopra.</div>`;
+ }).join(""):`<div class="empty"><b>Nessun voto in ${esc(s.name)}</b>${ro?"In questo periodo non ci sono voti.":"Aggiungi il primo voto con il pulsante qui sopra."}</div>`;
+ return true;
 }
 
 function editGrade(subjectId,gradeId){
@@ -536,7 +583,8 @@ function getSubjectTrend(s){
 }
 function chartColor(i){return `hsl(${(i*47+215)%360} 72% 52%)`}
 function renderStatistics(){
- const subjectsWithGrades=data.subjects.filter(s=>(s.grades||[]).length);
+ const subs=viewSubjects();
+ const subjectsWithGrades=subs.filter(s=>(s.grades||[]).length);
  const ranked=subjectsWithGrades.map(s=>({s,a:sAvg(s)})).sort((a,b)=>b.a-a.a);
  const best=ranked[0],worst=ranked.length>1?ranked[ranked.length-1]:null;
  const bv=document.getElementById('statsBestValue'),wv=document.getElementById('statsWorstValue');
@@ -544,14 +592,14 @@ function renderStatistics(){
  bv.textContent=best?f(best.a):'—';bv.className='stat-value '+(best?cls(best.a):'');
  document.getElementById('statsWorstName').textContent=worst?worst.s.name:'—';
  wv.textContent=worst?f(worst.a):'—';wv.className='stat-value '+(worst?cls(worst.a):'');
- const all=grades(),general=average(all);
+ const all=viewGrades(),general=average(all);
  const gv=document.getElementById('statsGeneral');gv.textContent=general==null?'—':f(general);gv.className='stat-value '+cls(general);
  const below=ranked.filter(x=>x.a<6).length,bl=document.getElementById('statsBelow');
  bl.textContent=below;bl.className='stat-value '+(below?'bad':'good');
  const filter=document.getElementById('statsFilter');
  const current=filter.value;
- filter.innerHTML='<option value="all">Tutte le materie</option>'+data.subjects.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
- filter.value=data.subjects.some(s=>s.id===current)?current:'all';
+ filter.innerHTML='<option value="all">Tutte le materie</option>'+subs.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
+ filter.value=subs.some(s=>s.id===current)?current:'all';
  const selected=filter.value==='all'?subjectsWithGrades:subjectsWithGrades.filter(s=>s.id===filter.value);
  const wrap=document.getElementById('trendChartWrap'),legend=document.getElementById('trendLegend');
  if(!selected.length){
@@ -570,13 +618,13 @@ function renderStatistics(){
      tickIdx.forEach(i=>{const xx=x(dates[i]);const label=new Date(dates[i]+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short'});svg+=`<text x="${xx}" y="${H-10}" text-anchor="middle" font-size="9" fill="#9096a1">${label}</text>`});
    }
    selected.forEach((s,idx)=>{
-     const pts=getSubjectTrend(s); if(!pts.length)return; const color=chartColor(data.subjects.indexOf(s));
+     const pts=getSubjectTrend(s); if(!pts.length)return; const color=chartColor(subs.indexOf(s));
      const path=pts.map((p,i)=>`${i?'L':'M'} ${x(p.date).toFixed(1)} ${y(p.avg).toFixed(1)}`).join(' ');
      svg+=`<path d="${path}" fill="none" stroke="${color}" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>`;
      pts.forEach(p=>svg+=`<circle cx="${x(p.date).toFixed(1)}" cy="${y(p.avg).toFixed(1)}" r="3.2" fill="${color}" stroke="#fff" stroke-width="1.5"><title>${esc(s.name)} · ${f(p.avg)} · ${new Date(p.date+'T12:00:00').toLocaleDateString('it-IT')}</title></circle>`);
    });
    svg+='</svg>'; wrap.innerHTML=svg;
-   legend.innerHTML=selected.map(s=>{const c=chartColor(data.subjects.indexOf(s));return `<div class="legend-item"><i class="legend-dot" style="background:${c}"></i>${esc(s.name)}</div>`}).join('');
+   legend.innerHTML=selected.map(s=>{const c=chartColor(subs.indexOf(s));return `<div class="legend-item"><i class="legend-dot" style="background:${c}"></i>${esc(s.name)}</div>`}).join('');
  }
  document.getElementById('statsRanking').innerHTML=ranked.length?ranked.map((x,i)=>`<div class="rank-row"><div class="rank-num">${i+1}</div><div class="rank-name">${x.s.icon} ${esc(x.s.name)}</div><div class="rank-bar"><i style="width:${Math.max(0,Math.min(100,x.a*10))}%"></i></div><div class="rank-value ${cls(x.a)}">${f(x.a)}</div></div>`).join(''):`<div class="empty"><b>Nessuna materia con voti</b>Inserisci i primi voti per creare le statistiche.</div>`;
 }
@@ -632,7 +680,7 @@ function openHistory(historyId){
 }
 function renderAll(){
  checkAutomaticPeriod();
- renderHome();renderSubjects();renderAverages();renderGrades();renderStatistics();renderSettings();
+ renderPeriodBar();renderHome();renderSubjects();renderAverages();renderGrades();renderStatistics();renderSettings();
 }
 function openSubjectModal(subjectId=null){
  editing=subjectId;
@@ -653,6 +701,8 @@ function saveSubject(){
 function deleteSubject(sid){const s=data.subjects.find(x=>x.id===sid);if(!s)return;if(!confirm(`Eliminare ${s.name} e tutti i suoi voti?`))return;data.subjects=data.subjects.filter(x=>x.id!==sid);save();renderAll();toast("Materia eliminata.")}
 function openGradeModal(subjectId=null){
  editingGrade=null;
+ // I nuovi voti vanno sempre nel periodo in corso
+ if(isArchiveView()){setViewPeriod(null);toast(`Torni a ${currentPeriodName()} per aggiungere il voto.`)}
  document.getElementById("gradeModalTitle").textContent="Aggiungi voto";
  document.getElementById("gradeSaveButton").textContent="Aggiungi voto";
  if(!data.subjects.length)return toast("Aggiungi prima una materia.");
