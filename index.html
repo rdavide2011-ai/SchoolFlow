@@ -183,7 +183,7 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
 
 <section id="subjectDetail" class="page">
  <div class="page-head">
-   <button class="back-link" onclick="showPage('home')">‹ Indietro</button>
+   <button class="back-link" onclick="goBack()">‹ Indietro</button>
    <div class="eyebrow" id="detailEyebrow">MATERIA</div>
    <h1 id="detailTitle">Materia</h1>
    <p id="detailSubtitle">Gestisci qui tutti i voti della materia.</p>
@@ -223,9 +223,9 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
     <option value="trimestri">3 Trimestri</option>
     <option value="trimestre_pentamestre">Trimestre + Pentamestre</option>
    </select></div></div>
-   <div style="grid-column:1/-1;background:#f7f7fa;border-radius:14px;padding:13px"><div class="field"><label>FINE 1° PERIODO</label><input id="firstPeriodEnd" type="date" onchange="saveSettings()"></div></div>
+   <div style="grid-column:1/-1;background:#f7f7fa;border-radius:14px;padding:13px"><div class="field"><label id="firstPeriodEndLabel">FINE 1° PERIODO</label><input id="firstPeriodEnd" type="date" onchange="saveSettings()"></div></div>
    <div style="grid-column:1/-1;background:#f7f7fa;border-radius:14px;padding:13px"><div class="field"><label id="secondPeriodEndLabel">FINE 2° PERIODO</label><input id="secondPeriodEnd" type="date" onchange="saveSettings()"></div></div>
-   <div id="thirdPeriodEndWrap" style="display:none;grid-column:1/-1;background:#f7f7fa;border-radius:14px;padding:13px"><div class="field"><label>FINE 3° PERIODO</label><input id="thirdPeriodEnd" type="date" onchange="saveSettings()"></div></div>
+   <div id="thirdPeriodEndWrap" style="display:none;grid-column:1/-1;background:#f7f7fa;border-radius:14px;padding:13px"><div class="field"><label id="thirdPeriodEndLabel">FINE 3° PERIODO</label><input id="thirdPeriodEnd" type="date" onchange="saveSettings()"></div></div>
   </div>
   <div class="section-title"><h2>Storico periodi</h2><span>solo lettura</span></div>
   <div id="historyList" class="list"></div>
@@ -258,8 +258,8 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
   <div class="handle"></div><div class="sheet-head"><h3 id="gradeModalTitle">Aggiungi voto</h3><button class="close" onclick="closeModal('gradeModal')">×</button></div>
   <div class="sheet-body"><div class="form">
    <div class="field"><label>MATERIA</label><select id="gradeSubject"></select></div>
-   <div class="field"><label>VOTO</label><input id="gradeValue" type="number" min="0" max="10" step=".1" placeholder="7,5" oninput="previewGrade()"></div>
-   <div class="field"><label>PESO DEL VOTO (%)</label><input id="gradeWeight" type="number" min="1" max="1000" value="100" oninput="previewGrade()"></div>
+   <div class="field"><label>VOTO</label><input id="gradeValue" type="text" inputmode="decimal" autocomplete="off" placeholder="7,5" oninput="previewGrade()"></div>
+   <div class="field"><label>PESO DEL VOTO (%)</label><input id="gradeWeight" type="text" inputmode="decimal" autocomplete="off" value="100" oninput="previewGrade()"></div>
    <div class="field"><label>TIPO</label><select id="gradeType"><option>Orale</option><option>Scritto</option><option>Pratico</option><option>Compito</option><option>Altro</option></select></div>
    <div class="field"><label>DATA</label><input id="gradeDate" type="date"></div>
    <div class="field"><label>NOTE</label><input id="gradeNote" maxlength="100" placeholder="Facoltativo"></div>
@@ -335,10 +335,17 @@ function load(){
    x.subjects.forEach(s=>{s.grades=Array.isArray(s.grades)?s.grades:[]});
    return x;
   }
- }catch(e){}
+ }catch(e){
+  // Dati illeggibili: ne salvo una copia di sicurezza prima che vengano sovrascritti
+  try{const raw=localStorage.getItem(KEY);if(raw)localStorage.setItem(KEY+"_backup_"+Date.now(),raw)}catch(_){}
+ }
  return{subjects:JSON.parse(JSON.stringify(DEFAULT)),settings:defaultSettings(),history:[]};
 }
-function save(){localStorage.setItem(KEY,JSON.stringify(data))}
+function save(){
+ try{localStorage.setItem(KEY,JSON.stringify(data));return true}
+ catch(e){toast("Errore: impossibile salvare sul dispositivo.");return false}
+}
+function parseNum(v){const t=String(v??"").trim().replace(",",".");return t===""?NaN:Number(t)}
 function todayISO(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
 function periodLabel(p){
  const cfg=periodConfig((data.settings||defaultSettings()).periodType);
@@ -349,8 +356,17 @@ function archiveCurrentPeriod(){
  const period=s.currentPeriod||1;
  const name=cfg.names[period-1];
  if(!name)return false;
- const already=data.history.some(h=>h.schoolYear===s.schoolYear&&h.period===period&&h.periodType===s.periodType);
- if(!already){
+ const already=data.history.find(h=>h.schoolYear===s.schoolYear&&h.period===period&&h.periodType===s.periodType);
+ if(already){
+  // Archivio già presente: unisco i voti attuali invece di perderli
+  data.subjects.forEach(sub=>{
+   if(!(sub.grades||[]).length)return;
+   let hs=(already.subjects||[]).find(x=>x.id===sub.id);
+   if(!hs){hs={id:sub.id,name:sub.name,icon:sub.icon,grades:[]};already.subjects=already.subjects||[];already.subjects.push(hs)}
+   hs.grades=hs.grades||[];
+   sub.grades.forEach(g=>{if(!hs.grades.some(x=>x.id===g.id))hs.grades.push(JSON.parse(JSON.stringify(g)))});
+  });
+ }else{
   data.history.push({
    id:id(),
    schoolYear:s.schoolYear,
@@ -366,16 +382,28 @@ function archiveCurrentPeriod(){
  save();
  return true;
 }
+function periodsToArchive(s){
+ // Quali periodi verrebbero archiviati con queste impostazioni (senza modificare nulla)
+ const cfg=periodConfig(s.periodType),ends=getPeriodEnds(s),out=[];
+ let p=s.currentPeriod||1;
+ while(p<=cfg.names.length){
+  const end=ends[p-1];
+  if(!end||todayISO()<=end)break;
+  out.push(cfg.names[p-1]);p++;
+ }
+ return out;
+}
 function checkAutomaticPeriod(){
  const s=data.settings||defaultSettings(),cfg=periodConfig(s.periodType),ends=getPeriodEnds(s);
- let changed=false;
+ let changed=false;const archived=[];
  while(s.currentPeriod<=cfg.names.length){
   const end=ends[s.currentPeriod-1];
   if(!end||todayISO()<=end)break;
-  changed=archiveCurrentPeriod();
-  if(!changed)break;
+  const name=cfg.names[s.currentPeriod-1];
+  if(!archiveCurrentPeriod())break;
+  changed=true;archived.push(name);
  }
- if(changed)save();
+ if(changed){save();setTimeout(()=>toast(`Archiviato: ${archived.join(", ")}`),300)}
  return changed;
 }
 function id(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
@@ -385,7 +413,11 @@ function grades(){return data.subjects.flatMap(s=>(s.grades||[]).map(g=>({...g,s
 function average(gs){if(!gs.length)return null;let t=0,w=0;gs.forEach(g=>{const weight=Math.max(1,n(g.weight,100));t+=n(g.value)*weight;w+=weight});return w?t/w:null}
 function sAvg(s){return average(s.grades||[])}
 function cls(v){return v==null?"":v>=6?"good":v>=5?"mid":"bad"}
+let lastPage="home";
+function goBack(){showPage(lastPage||"home")}
 function showPage(page,button){
+ const cur=document.querySelector(".page.active")?.id;
+ if(page==="subjectDetail"&&cur&&cur!=="subjectDetail")lastPage=cur;
  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
  document.getElementById(page).classList.add("active");
  document.querySelectorAll(".bottom-nav button").forEach(x=>x.classList.remove("active"));
@@ -471,8 +503,8 @@ function editGrade(subjectId,gradeId){
  const sel=document.getElementById("gradeSubject");
  sel.innerHTML=data.subjects.map(x=>`<option value="${x.id}">${x.icon} ${esc(x.name)}</option>`).join("");
  sel.value=subjectId;
- document.getElementById("gradeValue").value=g.value;
- document.getElementById("gradeWeight").value=g.weight;
+ document.getElementById("gradeValue").value=String(g.value??"").replace(".",",");
+ document.getElementById("gradeWeight").value=String(g.weight??100).replace(".",",");
  document.getElementById("gradeType").value=g.type;
  document.getElementById("gradeDate").value=g.date||"";
  document.getElementById("gradeNote").value=g.note||"";
@@ -506,14 +538,16 @@ function chartColor(i){return `hsl(${(i*47+215)%360} 72% 52%)`}
 function renderStatistics(){
  const subjectsWithGrades=data.subjects.filter(s=>(s.grades||[]).length);
  const ranked=subjectsWithGrades.map(s=>({s,a:sAvg(s)})).sort((a,b)=>b.a-a.a);
- const best=ranked[0],worst=ranked[ranked.length-1];
+ const best=ranked[0],worst=ranked.length>1?ranked[ranked.length-1]:null;
+ const bv=document.getElementById('statsBestValue'),wv=document.getElementById('statsWorstValue');
  document.getElementById('statsBestName').textContent=best?best.s.name:'—';
- document.getElementById('statsBestValue').textContent=best?f(best.a):'—';
+ bv.textContent=best?f(best.a):'—';bv.className='stat-value '+(best?cls(best.a):'');
  document.getElementById('statsWorstName').textContent=worst?worst.s.name:'—';
- document.getElementById('statsWorstValue').textContent=worst?f(worst.a):'—';
+ wv.textContent=worst?f(worst.a):'—';wv.className='stat-value '+(worst?cls(worst.a):'');
  const all=grades(),general=average(all);
- document.getElementById('statsGeneral').textContent=general==null?'—':f(general);
- document.getElementById('statsBelow').textContent=ranked.filter(x=>x.a<6).length;
+ const gv=document.getElementById('statsGeneral');gv.textContent=general==null?'—':f(general);gv.className='stat-value '+cls(general);
+ const below=ranked.filter(x=>x.a<6).length,bl=document.getElementById('statsBelow');
+ bl.textContent=below;bl.className='stat-value '+(below?'bad':'good');
  const filter=document.getElementById('statsFilter');
  const current=filter.value;
  filter.innerHTML='<option value="all">Tutte le materie</option>'+data.subjects.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
@@ -526,10 +560,10 @@ function renderStatistics(){
  }else{
    const dateSet=new Set(); selected.forEach(s=>getSubjectTrend(s).forEach(p=>dateSet.add(p.date)));
    const dates=[...dateSet].sort();
-   const W=620,H=270,L=38,R=12,T=15,B=34,iw=W-L-R,ih=H-T-B;
+   const W=Math.max(280,Math.round(wrap.clientWidth||620)),H=270,L=24,R=12,T=15,B=34,iw=W-L-R,ih=H-T-B;
    const x=d=>dates.length===1?L+iw/2:L+(dates.indexOf(d)/(dates.length-1))*iw;
    const y=v=>T+(10-v)/10*ih;
-   let svg=`<svg class="trend-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Andamento delle medie nel tempo">`;
+   let svg=`<svg class="trend-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Andamento delle medie nel tempo">`;
    [0,2,4,6,8,10].forEach(v=>{const yy=y(v);svg+=`<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="#eceef2" stroke-width="1"/><text x="4" y="${yy+3}" font-size="9" fill="#9096a1">${v}</text>`});
    if(dates.length){
      const tickIdx=[...new Set([0,Math.floor((dates.length-1)/2),dates.length-1])];
@@ -555,7 +589,9 @@ function renderSettings(){
  document.getElementById("firstPeriodEnd").value=s.firstPeriodEnd||"";
  document.getElementById("secondPeriodEnd").value=s.secondPeriodEnd||"";
  document.getElementById("thirdPeriodEnd").value=s.thirdPeriodEnd||"";
- document.getElementById("secondPeriodEndLabel").textContent=cfg.labels[1]||"Fine 2° periodo";
+ document.getElementById("firstPeriodEndLabel").textContent=(cfg.labels[0]||"Fine 1° periodo").toUpperCase();
+ document.getElementById("secondPeriodEndLabel").textContent=(cfg.labels[1]||"Fine 2° periodo").toUpperCase();
+ document.getElementById("thirdPeriodEndLabel").textContent=(cfg.labels[2]||"Fine 3° periodo").toUpperCase();
  document.getElementById("thirdPeriodEndWrap").style.display=cfg.names.length===3?"block":"none";
  const history=(data.history||[]).slice().sort((a,b)=>{
   const sa=String(a.schoolYear),sb=String(b.schoolYear);
@@ -567,14 +603,19 @@ function renderSettings(){
  }).join(""):`<div class="empty"><b>Nessun periodo archiviato</b>Quando terminerà il primo periodo, i tuoi voti verranno salvati qui automaticamente.</div>`;
 }
 function saveSettings(){
- const s=data.settings||defaultSettings();
- const newType=document.getElementById("periodType").value;
- s.periodType=newType;
+ const old=data.settings||defaultSettings();
+ const s=Object.assign({},old);
+ s.periodType=document.getElementById("periodType").value;
  s.firstPeriodEnd=document.getElementById("firstPeriodEnd").value;
  s.secondPeriodEnd=document.getElementById("secondPeriodEnd").value;
  s.thirdPeriodEnd=document.getElementById("thirdPeriodEnd").value;
  const cfg=periodConfig(s.periodType);
  if(s.currentPeriod>cfg.names.length)s.currentPeriod=cfg.names.length;
+ // Se le nuove date chiudono subito un periodo, chiedo conferma prima di archiviare i voti
+ const toArchive=periodsToArchive(s),current=grades().length;
+ if(toArchive.length&&current&&!confirm(`Con queste date verrà chiuso subito: ${toArchive.join(", ")}.\n\nI ${current} voti attuali verranno spostati nello storico. Continuare?`)){
+  renderSettings();toast("Modifica annullata.");return;
+ }
  data.settings=s;save();checkAutomaticPeriod();renderAll();toast("Impostazioni salvate.");
 }
 function openHistory(historyId){
@@ -617,26 +658,26 @@ function openGradeModal(subjectId=null){
  if(!data.subjects.length)return toast("Aggiungi prima una materia.");
  const sel=document.getElementById("gradeSubject");sel.innerHTML=data.subjects.map(s=>`<option value="${s.id}">${s.icon} ${esc(s.name)}</option>`).join("");
  if(subjectId)sel.value=subjectId;
- document.getElementById("gradeValue").value="";document.getElementById("gradeWeight").value=100;document.getElementById("gradeType").value="Orale";document.getElementById("gradeDate").value=new Date().toISOString().slice(0,10);document.getElementById("gradeNote").value="";previewGrade();
+ document.getElementById("gradeValue").value="";document.getElementById("gradeWeight").value=100;document.getElementById("gradeType").value="Orale";document.getElementById("gradeDate").value=todayISO();document.getElementById("gradeNote").value="";previewGrade();
  document.getElementById("gradeModal").classList.add("show");setTimeout(()=>document.getElementById("gradeValue").focus(),80);
 }
 function previewGrade(){
- const v=n(document.getElementById("gradeValue").value,NaN),w=n(document.getElementById("gradeWeight").value,100);
+ const v=parseNum(document.getElementById("gradeValue").value);let w=parseNum(document.getElementById("gradeWeight").value);if(!Number.isFinite(w))w=100;
  document.getElementById("gradePreview").innerHTML=Number.isFinite(v)?`Questo voto vale <strong>${f(v)} × ${f(w)}%</strong> nel calcolo della media.`:"Inserisci un voto per vedere il peso.";
 }
 function saveGrade(){
  const sid=document.getElementById("gradeSubject").value;
- const v=n(document.getElementById("gradeValue").value,NaN);
- const w=n(document.getElementById("gradeWeight").value,NaN);
+ const v=parseNum(document.getElementById("gradeValue").value);
+ const w=parseNum(document.getElementById("gradeWeight").value);
  if(!Number.isFinite(v)||v<0||v>10)return toast("Inserisci un voto tra 0 e 10.");
- if(!Number.isFinite(w)||w<1)return toast("Il peso deve essere almeno 1%.");
+ if(!Number.isFinite(w)||w<1||w>1000)return toast("Il peso deve essere tra 1% e 1000%.");
  const s=data.subjects.find(x=>x.id===sid);
  if(!s)return;
  const gradeData={
    value:v,
    weight:w,
    type:document.getElementById("gradeType").value,
-   date:document.getElementById("gradeDate").value||new Date().toISOString().slice(0,10),
+   date:document.getElementById("gradeDate").value||todayISO(),
    note:document.getElementById("gradeNote").value.trim()
  };
  if(editingGrade){
@@ -650,8 +691,10 @@ function saveGrade(){
      }else{
        Object.assign(g,gradeData);
      }
+     toast("Voto modificato.");
+   }else{
+     toast("Voto non trovato.");
    }
-   toast("Voto modificato.");
  }else{
    s.grades=s.grades||[];
    s.grades.push({...gradeData,id:id()});
@@ -668,6 +711,7 @@ function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
 checkAutomaticPeriod();
 renderAll();
+window.addEventListener("resize",()=>{clearTimeout(window.rt);window.rt=setTimeout(()=>{if(document.getElementById("statistics").classList.contains("active"))renderStatistics()},150)});
 </script>
 </body>
 </html>
