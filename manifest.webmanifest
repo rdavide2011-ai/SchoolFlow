@@ -3,12 +3,12 @@
   "short_name": "SchoolFlow",
   "description": "Your school. Your progress.",
   "lang": "it",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#f5f6fa",
   "theme_color": "#0b0c10",
   "icons": [
-    { "src": "/SchoolFlow-logo.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" }
+    { "src": "SchoolFlow-logo.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" }
   ]
 }

@@ -2,8 +2,11 @@
 // NON tocca i voti: quelli restano nel localStorage del telefono.
 // Strategia: con internet scarica sempre la versione più recente (e la salva);
 // senza internet usa l'ultima versione salvata.
-const CACHE = "schoolflow-v1";
-const FILES = ["/", "/index.html", "/SchoolFlow-logo.png", "/manifest.webmanifest"];
+// Percorsi relativi: funziona sia su Vercel (/) sia su GitHub Pages (/SchoolFlow/).
+const CACHE = "schoolflow-v2";
+const BASE = self.registration.scope; // es. https://.../ oppure https://.../SchoolFlow/
+const INDEX = new URL("index.html", BASE).href;
+const FILES = [BASE, INDEX, new URL("SchoolFlow-logo.png", BASE).href, new URL("manifest.webmanifest", BASE).href];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -32,12 +35,12 @@ self.addEventListener("fetch", (event) => {
         .then((res) => {
           if (res.ok) {
             const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put("/index.html", copy));
+            caches.open(CACHE).then((c) => c.put(INDEX, copy));
           }
           return res;
         })
         .catch(() =>
-          caches.match("/index.html").then((r) => r || caches.match("/"))
+          caches.match(INDEX).then((r) => r || caches.match(BASE))
         )
     );
     return;
