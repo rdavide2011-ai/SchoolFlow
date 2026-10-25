@@ -133,6 +133,19 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
 .backup-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
 .backup-btn{background:#fff;border:1px solid var(--line);color:var(--text);border-radius:14px;padding:14px 10px;font-weight:850;font-size:13px;box-shadow:var(--shadow)}
 .backup-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.quick-wide{grid-column:1/-1;background:linear-gradient(135deg,#f4f1ff,#fff);border-color:#e3dcff}
+.secondary-detail{grid-column:1/-1;background:var(--accentSoft);color:var(--accent);border-radius:13px;padding:13px;font-weight:850}
+.calc-result{border-radius:16px;padding:16px;background:#f4f1ff;color:#3f2fa3}
+.calc-result .big{font-size:38px;font-weight:950;letter-spacing:-1.2px;line-height:1.05;margin:4px 0}
+.calc-result .lbl{font-size:10px;font-weight:900;letter-spacing:1px;opacity:.75}
+.calc-result p{margin:6px 0 0;font-size:12px;line-height:1.45}
+.calc-result.ok{background:#e9f8f1;color:#127a4c}.calc-result.ko{background:#fff0f1;color:#a3283a}
+.calc-now{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:2px 2px 0}
+.calc-now b{color:var(--text)}
+.calc-table{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.calc-cell{background:#f7f8fa;border-radius:11px;padding:8px 6px;text-align:center;font-size:10px;color:var(--muted)}
+.calc-cell b{display:block;font-size:15px;margin-top:2px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(min-width:700px){.app{padding-bottom:20px}.top{padding-left:calc((100% - 650px)/2);padding-right:calc((100% - 650px)/2)}.bottom-nav{width:500px;left:50%;right:auto;transform:translateX(-50%);border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0}.sheet{border-radius:25px}.modal-wrap{align-items:center;padding:20px}.sheet{width:min(560px,100%)}}
 </style>
 </head>
@@ -153,6 +166,7 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
  <div id="homeSubjects" class="subjects"></div>
  <div class="section-title"><h2>Azioni rapide</h2></div>
  <div class="quick-grid">
+  <button class="quick quick-wide" onclick="openCalcModal()"><div class="qicon">🎯</div><b>Quanto mi serve?</b><span>Scopri che voto ti serve per arrivare alla media che vuoi</span></button>
   <button class="quick" onclick="openGradeModal()"><div class="qicon">✏️</div><b>Aggiungi voto</b><span>Registra una nuova valutazione</span></button>
   <button class="quick" onclick="openSubjectModal()"><div class="qicon">📚</div><b>Nuova materia</b><span>Aggiungi una materia</span></button>
   <button class="quick" onclick="showPage('averages')"><div class="qicon">📊</div><b>Le mie medie</b><span>Guarda il rendimento</span></button>
@@ -213,6 +227,7 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
      <strong id="detailCount">0</strong>
    </div>
    <button id="detailAddButton" class="primary-detail" onclick="openGradeModal(currentSubjectId)">＋ Aggiungi voto</button>
+   <button id="detailCalcButton" class="secondary-detail" onclick="openCalcModal(currentSubjectId)">🎯 Quanto mi serve?</button>
  </div>
 
  <div class="section-title"><h2>Voti della materia</h2><span id="detailWeightInfo"></span></div>
@@ -287,6 +302,23 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
    <div id="gradePreview" class="preview">Inserisci un voto per vedere il peso.</div>
   </div></div>
   <div class="sheet-foot"><button class="cancel" onclick="closeModal('gradeModal')">Annulla</button><button id="gradeSaveButton" class="save" onclick="saveGrade()">Aggiungi voto</button></div>
+ </div>
+</div>
+<div id="calcModal" class="modal-wrap">
+ <div class="sheet">
+  <div class="handle"></div><div class="sheet-head"><h3>🎯 Quanto mi serve?</h3><button class="close" onclick="closeModal('calcModal')">×</button></div>
+  <div class="sheet-body"><div class="form">
+   <div class="field"><label>MATERIA</label><select id="calcSubject" onchange="renderCalc()"></select></div>
+   <div class="calc-now" id="calcNow"></div>
+   <div class="field-row">
+    <div class="field"><label>MEDIA CHE VUOI</label><input id="calcTarget" type="text" inputmode="decimal" autocomplete="off" value="6" oninput="renderCalc()"></div>
+    <div class="field"><label>PESO PROSSIMO VOTO (%)</label><input id="calcWeight" type="text" inputmode="decimal" autocomplete="off" value="100" oninput="renderCalc()"></div>
+   </div>
+   <div class="field"><label>QUANTE VERIFICHE TI MANCANO</label><select id="calcCount" onchange="renderCalc()"><option value="1">1 verifica</option><option value="2">2 verifiche</option><option value="3">3 verifiche</option><option value="4">4 verifiche</option></select></div>
+   <div id="calcResult" class="calc-result"></div>
+   <div class="field"><label>SE NELLA PROSSIMA VERIFICA PRENDI…</label><div id="calcTable" class="calc-table"></div></div>
+  </div></div>
+  <div class="sheet-foot"><button class="cancel" onclick="closeModal('calcModal')">Chiudi</button></div>
  </div>
 </div>
 <div id="historyModal" class="modal-wrap">
@@ -529,6 +561,7 @@ function renderSubjectDetail(){
  document.getElementById("detailTitle").textContent=s.name;
  document.getElementById("detailSubtitle").textContent=ro?"Voti di un periodo concluso: puoi solo consultarli.":"Qui puoi vedere, modificare ed eliminare i voti di questa materia.";
  document.getElementById("detailAddButton").style.display=ro?"none":"";
+ document.getElementById("detailCalcButton").style.display=ro?"none":"";
  const gs=(s.grades||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
  document.getElementById("detailAverage").textContent=sAvg(s)==null?"—":f(sAvg(s));
  document.getElementById("detailCount").textContent=gs.length;
@@ -688,6 +721,50 @@ function openHistory(historyId){
  });
  document.getElementById("historyModalBody").innerHTML=rows.length?rows.join(""):`<div class="empty"><b>Nessun voto</b>Non risultano voti archiviati in questo periodo.</div>`;
  document.getElementById("historyModal").classList.add("show");
+}
+// ================= QUANTO MI SERVE? =================
+// Usa sempre i voti del periodo in corso e la stessa media ponderata dell'app
+function openCalcModal(subjectId=null){
+ if(!data.subjects.length)return toast("Aggiungi prima una materia.");
+ const sel=document.getElementById("calcSubject");
+ sel.innerHTML=data.subjects.map(s=>`<option value="${s.id}">${s.icon} ${esc(s.name)}</option>`).join("");
+ const fallback=(data.subjects.find(s=>(s.grades||[]).length)||data.subjects[0]).id;
+ sel.value=subjectId&&data.subjects.some(s=>s.id===subjectId)?subjectId:fallback;
+ renderCalc();
+ document.getElementById("calcModal").classList.add("show");
+}
+function avgWith(T,W,x,w){return (T+x*w)/(W+w)}
+function renderCalc(){
+ const s=data.subjects.find(x=>x.id===document.getElementById("calcSubject").value);
+ const res=document.getElementById("calcResult"),table=document.getElementById("calcTable");
+ if(!s){res.innerHTML="";table.innerHTML="";return}
+ const gs=s.grades||[];
+ let T=0,W=0;gs.forEach(g=>{const w=Math.max(1,n(g.weight,100));T+=n(g.value)*w;W+=w});
+ const cur=W?T/W:null;
+ document.getElementById("calcNow").innerHTML=cur==null?`<span>Nessun voto in ${esc(s.name)} per ora</span>`:`<span>Media attuale <b class="${cls(cur)}">${f(cur)}</b></span><span>${gs.length} ${gs.length===1?"voto":"voti"}</span>`;
+ const target=parseNum(document.getElementById("calcTarget").value);
+ let w=parseNum(document.getElementById("calcWeight").value);
+ const k=Math.max(1,parseInt(document.getElementById("calcCount").value)||1);
+ if(!Number.isFinite(target)||target<1||target>10){res.className="calc-result";res.innerHTML=`<p>Inserisci una media obiettivo tra 1 e 10.</p>`;table.innerHTML="";return}
+ if(!Number.isFinite(w)||w<1||w>1000){res.className="calc-result";res.innerHTML=`<p>Inserisci un peso tra 1% e 1000%.</p>`;table.innerHTML="";return}
+ const totW=k*w;
+ const need=(target*(W+totW)-T)/totW;
+ const quale=k===1?"nella prossima verifica":`in ognuna delle prossime ${k} verifiche`;
+ if(need>10){
+  const best=avgWith(T,W,10,totW);
+  res.className="calc-result ko";
+  res.innerHTML=`<div class="lbl">NON BASTA</div><div class="big">oltre 10</div><p>Anche prendendo 10 ${quale} arriveresti a <b>${f(Math.round(best*100)/100)}</b>. Prova ad aumentare il numero di verifiche o il peso.</p>`;
+ }else if(need<=0){
+  res.className="calc-result ok";
+  res.innerHTML=`<div class="lbl">OBIETTIVO AL SICURO</div><div class="big">Qualsiasi voto</div><p>${cur!=null?`Con la media attuale di ${f(cur)}`:"Così"} resti comunque sopra ${f(target)}.</p>`;
+ }else{
+  const exact=Math.ceil(need*100-1e-9)/100;
+  const quarter=Math.ceil(need*4-1e-9)/4; // voto "da pagella" più vicino (multipli di 0,25)
+  res.className="calc-result"+(cur!=null&&cur>=target?" ok":"");
+  res.innerHTML=`<div class="lbl">TI SERVE ALMENO</div><div class="big">${f(exact)}</div><p>Per arrivare a <b>${f(target)}</b> in ${esc(s.name)} ti serve almeno <b>${f(exact)}</b> ${quale}${quarter!==exact?` (cioè punta a <b>${f(quarter)}</b>)`:""}.</p>`;
+ }
+ // Tabella: come cambierebbe la media con un solo voto nella prossima verifica
+ table.innerHTML=[3,4,5,6,7,8,9,10].map(x=>{const a=avgWith(T,W,x,w);return `<div class="calc-cell">con ${x}<b class="${cls(a)}">${f(Math.round(a*100)/100)}</b></div>`}).join("");
 }
 // ================= BACKUP =================
 function exportBackup(){
