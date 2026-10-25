@@ -147,6 +147,8 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
 .calc-cell{background:#f7f8fa;border-radius:11px;padding:8px 6px;text-align:center;font-size:10px;color:var(--muted)}
 .calc-cell b{display:block;font-size:15px;margin-top:2px}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.weight{white-space:nowrap}
+#gradeList .grade-card>div:nth-child(2){min-width:0;flex:1}
 @media(min-width:700px){.app{padding-bottom:20px}.top{padding-left:calc((100% - 650px)/2);padding-right:calc((100% - 650px)/2)}.bottom-nav{width:500px;left:50%;right:auto;transform:translateX(-50%);border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0}.sheet{border-radius:25px}.modal-wrap{align-items:center;padding:20px}.sheet{width:min(560px,100%)}}
 </style>
 </head>
@@ -236,7 +238,7 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
 </section>
 
 <section id="grades" class="page">
- <div class="page-head"><div class="eyebrow">REGISTRO</div><h1>Tutti i voti</h1><p>Il tuo storico completo delle valutazioni.</p></div>
+ <div class="page-head"><div class="eyebrow">REGISTRO</div><h1>Tutti i voti</h1><p>Il tuo storico completo delle valutazioni. Tocca ✎ per modificare un voto.</p></div>
  <div class="search-row"><input id="gradeSearch" class="search" placeholder="Cerca..." oninput="renderGrades()"><button class="add-btn" onclick="openGradeModal()">＋</button></div>
  <div id="gradeList" class="list"></div>
 </section>
@@ -540,7 +542,7 @@ function renderGrades(){
  const q=(document.getElementById("gradeSearch")?.value||"").toLowerCase();
  const ro=isArchiveView();
  const gs=viewGrades().filter(g=>`${g.subject} ${g.type} ${g.note||""}`.toLowerCase().includes(q)).sort((a,b)=>new Date(b.date)-new Date(a.date));
- document.getElementById("gradeList").innerHTML=gs.length?gs.map(g=>{const d=g.date?new Date(g.date+"T12:00:00").toLocaleDateString("it-IT"):"—";return `<div class="grade-card"><div class="subject-icon">${g.icon}</div><div><div class="grade-subject">${esc(g.subject)}</div><div class="grade-details">${esc(g.type)} · ${d}${g.note?" · "+esc(g.note):""}</div></div><div class="grade-right"><div class="grade-value ${cls(n(g.value))}">${f(n(g.value))}</div><div class="weight">${f(n(g.weight,100))}% peso</div></div>${ro?"":`<button class="action delete" onclick="deleteGrade('${g.subjectId}','${g.id}')">×</button>`}</div>`}).join(""):`<div class="empty"><b>Nessun voto</b>Quando inserirai un voto apparirà qui.</div>`;
+ document.getElementById("gradeList").innerHTML=gs.length?gs.map(g=>{const d=g.date?new Date(g.date+"T12:00:00").toLocaleDateString("it-IT"):"—";return `<div class="grade-card"><div class="subject-icon">${g.icon}</div><div><div class="grade-subject">${esc(g.subject)}</div><div class="grade-details">${esc(g.type)} · ${d}${g.note?" · "+esc(g.note):""}</div></div><div class="grade-right"><div class="grade-value ${cls(n(g.value))}">${f(n(g.value))}</div><div class="weight">${f(n(g.weight,100))}% peso</div></div>${ro?"":`<div class="grade-actions"><button class="action" aria-label="Modifica voto" onclick="editGrade('${g.subjectId}','${g.id}')">✎</button><button class="action delete" aria-label="Elimina voto" onclick="deleteGrade('${g.subjectId}','${g.id}')">×</button></div>`}</div>`}).join(""):`<div class="empty"><b>Nessun voto</b>Quando inserirai un voto apparirà qui.</div>`;
 }
 
 let currentSubjectId=null;
