@@ -149,6 +149,19 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .weight{white-space:nowrap}
 #gradeList .grade-card>div:nth-child(2){min-width:0;flex:1}
+/* Schermi stretti: gli elenchi non si allargano oltre lo schermo e i testi lunghi vanno a capo */
+.list,.subjects,.avg-list,.ranking{grid-template-columns:minmax(0,1fr)}
+.search{min-width:0}
+.subject-name,.manage-info strong,.grade-subject,.grade-details,.avg-head strong,.rank-name,.stat-card .stat-title{overflow-wrap:break-word;-webkit-hyphens:auto;hyphens:auto}
+.manage .actions,.grade-actions,.add-btn{flex:none}
+@media (max-width:360px){
+ #gradeList .grade-card>.subject-icon{display:none}
+ .grade-card{padding:12px;gap:9px}
+ .manage{gap:9px;padding:11px}
+ .manage .subject-icon{width:36px;height:36px;font-size:17px;border-radius:12px}
+ .actions .action,.grade-actions .action{width:31px;height:31px}
+ .grade-value{font-size:21px}
+}
 /* Schermata di caricamento */
 .splash{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;color:#fff;
  background:radial-gradient(620px 420px at 85% -10%,rgba(108,77,246,.45) 0%,rgba(108,77,246,0) 65%),radial-gradient(520px 380px at -10% 110%,rgba(46,98,190,.45) 0%,rgba(46,98,190,0) 60%),#0f1725;
@@ -493,7 +506,7 @@ function checkAutomaticPeriod(){
   if(!archiveCurrentPeriod())break;
   changed=true;archived.push(name);
  }
- if(changed){save();setTimeout(()=>toast(`Archiviato: ${archived.join(", ")}`),300)}
+ if(changed){save();setTimeout(()=>afterSplash(()=>toast(`Archiviato: ${archived.join(", ")}`)),300)}
  return changed;
 }
 function id(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
@@ -741,6 +754,13 @@ function saveSettings(){
  const cfg=periodConfig(s.periodType);
  if(s.currentPeriod>cfg.names.length)s.currentPeriod=cfg.names.length;
  // Se le nuove date chiudono subito un periodo, chiedo conferma prima di archiviare i voti
+ // le date di fine periodo devono essere in ordine (1° < 2° < 3°)
+ const ends=getPeriodEnds(s);
+ for(let k=1;k<ends.length;k++){
+  if(ends[k]&&ends[k-1]&&ends[k]<=ends[k-1]){
+   renderSettings();toast(`La fine del ${k+1}° periodo deve essere dopo la fine del ${k}°.`);return;
+  }
+ }
  const toArchive=periodsToArchive(s),current=grades().length;
  if(toArchive.length&&current&&!confirm(`Con queste date verrà chiuso subito: ${toArchive.join(", ")}.\n\nI ${current} voti attuali verranno spostati nello storico. Continuare?`)){
   renderSettings();toast("Modifica annullata.");return;
@@ -963,6 +983,11 @@ function renderNewYear(){
  if(b){b.classList.toggle("show",done&&!isArchiveView());document.getElementById("yearBannerText").textContent=`🎓 Anno ${s.schoolYear} concluso! Pronto per il ${next}?`}
 }
 // ================= SCHERMATA DI CARICAMENTO =================
+function afterSplash(fn,tries=0){
+ const sp=document.getElementById("splash");
+ if(!sp||sp.classList.contains("hide")||tries>40)return fn();
+ setTimeout(()=>afterSplash(fn,tries+1),200);
+}
 function runSplash(){
  const sp=document.getElementById("splash");if(!sp)return;
  const bar=document.getElementById("splashBar"),txt=document.getElementById("splashStep");
