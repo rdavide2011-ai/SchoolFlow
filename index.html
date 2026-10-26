@@ -149,10 +149,42 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .weight{white-space:nowrap}
 #gradeList .grade-card>div:nth-child(2){min-width:0;flex:1}
+/* Schermata di caricamento */
+.splash{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;color:#fff;
+ background:radial-gradient(620px 420px at 85% -10%,rgba(108,77,246,.45) 0%,rgba(108,77,246,0) 65%),radial-gradient(520px 380px at -10% 110%,rgba(46,98,190,.45) 0%,rgba(46,98,190,0) 60%),#0f1725;
+ transition:opacity .45s ease,transform .45s ease;animation:splashSafety 0s linear 6s forwards}
+.splash.hide{opacity:0;transform:scale(1.04);pointer-events:none}
+@keyframes splashSafety{to{opacity:0;visibility:hidden;pointer-events:none}}
+.splash-inner{display:flex;flex-direction:column;align-items:center;text-align:center;padding:24px}
+.splash-logo{width:112px;height:112px;border-radius:27px;overflow:hidden;position:relative;background:#0f1725;box-shadow:0 18px 50px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.08);animation:splashPop .7s cubic-bezier(.2,.9,.3,1.2) both}
+.splash-name{font-size:30px;font-weight:900;letter-spacing:-1px;margin-top:22px;animation:splashUp .6s .15s ease both}
+.splash-tag{font-size:13px;color:#aab3c7;margin-top:6px;font-weight:600;letter-spacing:.2px;animation:splashUp .6s .25s ease both}
+.splash-bar{width:190px;height:5px;border-radius:99px;background:rgba(255,255,255,.12);margin-top:34px;overflow:hidden;animation:splashUp .6s .3s ease both}
+.splash-bar i{display:block;height:100%;width:6%;border-radius:99px;background:linear-gradient(90deg,#6c4df6,#4ea1ff);transition:width .32s ease}
+.splash-step{font-size:12px;color:#cfd6e6;margin-top:14px;min-height:16px;font-weight:600;animation:splashUp .6s .35s ease both}
+.splash-logo img{position:absolute;width:141px;height:141px;left:-14.5px;top:-14.3px;display:block}
+@keyframes splashPop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+@keyframes splashUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.splash-logo,.splash-name,.splash-tag,.splash-bar,.splash-step{animation:none}}
+/* Nuovo anno scolastico */
+.newyear-card{background:#fff;border:1px solid var(--line);border-radius:19px;padding:16px;box-shadow:var(--shadow);margin-top:12px;display:grid;gap:12px}
+.ny-btn{background:var(--accentSoft);color:var(--accent);border-radius:14px;padding:14px 10px;font-weight:850;font-size:13px}
+.newyear-card b{display:block;font-size:14px}.newyear-card span{display:block;font-size:12px;color:var(--muted);margin-top:4px;line-height:1.45}
+.year-banner{display:none;margin-top:14px;background:#eef9f3;border:1px solid #cdeedb;color:#11643f;border-radius:16px;padding:13px 14px;font-size:12px;align-items:center;justify-content:space-between;gap:10px}
+.year-banner.show{display:flex}.year-banner button{background:#22b573;color:#fff;border-radius:10px;padding:9px 11px;font-weight:850;font-size:12px;flex:none}
 @media(min-width:700px){.app{padding-bottom:20px}.top{padding-left:calc((100% - 650px)/2);padding-right:calc((100% - 650px)/2)}.bottom-nav{width:500px;left:50%;right:auto;transform:translateX(-50%);border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0}.sheet{border-radius:25px}.modal-wrap{align-items:center;padding:20px}.sheet{width:min(560px,100%)}}
 </style>
 </head>
 <body>
+<div id="splash" class="splash" aria-hidden="true">
+ <div class="splash-inner">
+  <div class="splash-logo"><img src="SchoolFlow-logo.png" alt=""></div>
+  <div class="splash-name">SchoolFlow</div>
+  <div class="splash-tag">Your school. Your progress.</div>
+  <div class="splash-bar"><i id="splashBar"></i></div>
+  <div class="splash-step" id="splashStep">Avvio…</div>
+ </div>
+</div>
 <div class="app">
 <header class="top">
  <div class="profile"><div class="avatar"><img src="SchoolFlow-logo.png" alt="Logo SchoolFlow"></div><div><div class="top-title">SchoolFlow</div><div class="top-sub">Il tuo spazio scolastico</div></div></div>
@@ -164,6 +196,7 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
 <section id="home" class="page active">
  <div class="hero"><div id="homeHello" class="hello">PANORAMICA</div><h1>Come stai andando?</h1><p>Controlla rapidamente il tuo rendimento.</p>
   <div class="big-average"><div class="avg-label">MEDIA GENERALE</div><div id="homeAvg" class="avg-number">—</div><div id="homeAvgInfo" class="avg-info">Aggiungi i tuoi primi voti</div><div id="homeAvgPill" class="avg-pill">0 voti</div></div>
+  <div id="yearBanner" class="year-banner"><span id="yearBannerText">Anno scolastico concluso.</span><button onclick="startNewSchoolYear()">Inizia nuovo anno</button></div>
  </div>
  <div class="section-title"><h2>Le tue materie</h2><button onclick="showPage('subjects')">Gestisci</button></div>
  <div id="homeSubjects" class="subjects"></div>
@@ -259,6 +292,7 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
    <div style="grid-column:1/-1;background:#f7f7fa;border-radius:14px;padding:13px"><div class="field"><label id="secondPeriodEndLabel">FINE 2° PERIODO</label><input id="secondPeriodEnd" type="date" onchange="saveSettings()"></div></div>
    <div id="thirdPeriodEndWrap" style="display:none;grid-column:1/-1;background:#f7f7fa;border-radius:14px;padding:13px"><div class="field"><label id="thirdPeriodEndLabel">FINE 3° PERIODO</label><input id="thirdPeriodEnd" type="date" onchange="saveSettings()"></div></div>
   </div>
+  <div class="newyear-card"><div><b>🎓 Nuovo anno scolastico</b><span id="newYearInfo">A fine anno archivia i voti e riparti dal primo periodo.</span></div><button class="ny-btn" onclick="startNewSchoolYear()">Inizia l'anno <span id="nextYearLabel">2027/28</span></button></div>
   <div class="section-title"><h2>Storico periodi</h2><span>solo lettura</span></div>
   <div id="historyList" class="list"></div>
   <div class="section-title"><h2>Backup</h2><span id="lastBackupLabel">mai fatto</span></div>
@@ -888,9 +922,65 @@ function importBackup(input){
  reader.onerror=()=>toast("Impossibile leggere il file.");
  reader.readAsText(file);
 }
+// ================= NUOVO ANNO SCOLASTICO =================
+function nextSchoolYear(y){
+ const m=String(y||"").match(/^(\d{4})\s*\/\s*(\d{2,4})$/);
+ if(m){const a=Number(m[1])+1;return `${a}/${String(a+1).slice(-2)}`}
+ const t=new Date(),a=t.getMonth()>=6?t.getFullYear():t.getFullYear()-1;return `${a}/${String(a+1).slice(-2)}`;
+}
+function addOneYear(iso){
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(String(iso||"")))return iso;
+ let [y,m,d]=iso.split("-").map(Number);y++;if(m===2&&d===29)d=28;
+ return `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+}
+function isYearCompleted(){const s=data.settings||defaultSettings();return s.currentPeriod>periodConfig(s.periodType).names.length}
+function startNewSchoolYear(){
+ const s=data.settings||defaultSettings(),cfg=periodConfig(s.periodType);
+ const next=nextSchoolYear(s.schoolYear),done=isYearCompleted(),cur=grades().length;
+ const where=done?cfg.names[cfg.names.length-1]:currentPeriodName();
+ let msg=`Iniziare l'anno scolastico ${next}?\n\n`;
+ if(!done)msg+=`Attenzione: l'anno ${s.schoolYear} non risulta ancora concluso (periodo attuale: ${currentPeriodName()}).\n\n`;
+ if(cur)msg+=`I ${cur} voti attuali verranno conservati nello storico (${where} ${s.schoolYear}).\n`;
+ msg+=`Le materie restano. Le date dei periodi vengono spostate di un anno (potrai modificarle).\nNon viene cancellato nessun voto.`;
+ if(!confirm(msg))return;
+ try{localStorage.setItem(KEY+"_before_new_year",JSON.stringify(data))}catch(e){}
+ if(cur){
+  // voti inseriti dopo la fine dell'ultimo periodo: finiscono nell'archivio dell'ultimo periodo
+  if(done)s.currentPeriod=cfg.names.length;
+  archiveCurrentPeriod();
+ }
+ s.schoolYear=next;s.currentPeriod=1;
+ s.firstPeriodEnd=addOneYear(s.firstPeriodEnd);s.secondPeriodEnd=addOneYear(s.secondPeriodEnd);s.thirdPeriodEnd=addOneYear(s.thirdPeriodEnd);
+ data.settings=s;viewPeriodId=null;save();renderAll();
+ toast(`Benvenuto nel ${next}! Controlla le date dei periodi.`);
+}
+function renderNewYear(){
+ const s=data.settings||defaultSettings(),next=nextSchoolYear(s.schoolYear),done=isYearCompleted();
+ const lbl=document.getElementById("nextYearLabel");if(lbl)lbl.textContent=next;
+ const info=document.getElementById("newYearInfo");
+ if(info)info.textContent=done?`L'anno ${s.schoolYear} è concluso: inizia il ${next}. I voti restano nello storico e le materie vengono mantenute.`:`Da usare a fine anno: archivia i voti del ${s.schoolYear} nello storico e riparti dal primo periodo del ${next}, con le stesse materie.`;
+ const b=document.getElementById("yearBanner");
+ if(b){b.classList.toggle("show",done&&!isArchiveView());document.getElementById("yearBannerText").textContent=`🎓 Anno ${s.schoolYear} concluso! Pronto per il ${next}?`}
+}
+// ================= SCHERMATA DI CARICAMENTO =================
+function runSplash(){
+ const sp=document.getElementById("splash");if(!sp)return;
+ const bar=document.getElementById("splashBar"),txt=document.getElementById("splashStep");
+ const nSub=data.subjects.length,nGr=grades().length+(data.history||[]).reduce((t,h)=>t+grades(h.subjects||[]).length,0);
+ const steps=[[`Carico le materie · ${nSub}`,32],[`Carico i voti · ${nGr}`,64],["Calcolo le medie",88],["Pronto ✓",100]];
+ let reduce=false;try{reduce=matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){}
+ const ms=reduce?140:330;let i=0,started=false;
+ const next=()=>{
+  if(i<steps.length){txt.textContent=steps[i][0];bar.style.width=steps[i][1]+"%";i++;setTimeout(next,ms)}
+  else{sp.classList.add("hide");setTimeout(()=>sp.remove(),500)}
+ };
+ const start=()=>{if(started)return;started=true;setTimeout(next,reduce?0:250)};
+ const logo=sp.querySelector("img");
+ if(logo.complete)start();else{logo.addEventListener("load",start);logo.addEventListener("error",start);setTimeout(start,900)}
+}
 function renderAll(){
  checkAutomaticPeriod();
- renderPeriodBar();renderHome();renderSubjects();renderAverages();renderGrades();renderStatistics();renderSettings();
+ renderPeriodBar();renderHome();renderSubjects();renderAverages();renderGrades();renderStatistics();renderSettings();renderNewYear();
 }
 function openSubjectModal(subjectId=null){
  editing=subjectId;
@@ -971,6 +1061,7 @@ function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
 checkAutomaticPeriod();
 renderAll();
+runSplash();
 // Funzionamento offline: registra il service worker (non tocca i voti salvati)
 if("serviceWorker" in navigator&&location.protocol!=="file:"){
  window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
