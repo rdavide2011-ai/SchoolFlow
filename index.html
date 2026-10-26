@@ -162,6 +162,41 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
  .actions .action,.grade-actions .action{width:31px;height:31px}
  .grade-value{font-size:21px}
 }
+/* Benvenuto (primo avvio) */
+html.onb-open,html.onb-open body{overflow:hidden}
+.onb{position:fixed;inset:0;overscroll-behavior:contain;z-index:900;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch}
+.onb[hidden]{display:none}
+.onb-wrap{max-width:560px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 18px) 18px calc(env(safe-area-inset-bottom) + 18px)}
+.onb-top{display:flex;align-items:center;justify-content:space-between;min-height:34px}
+.onb-dots{display:flex;gap:6px}.onb-dots i{width:8px;height:8px;border-radius:99px;background:#dcdff0;transition:.25s}.onb-dots i.on{width:22px;background:var(--accent)}
+.onb-link{background:none;color:var(--muted);font-size:13px;font-weight:750;padding:8px 4px}
+.onb-body{flex:1;padding-top:14px}.onb-body.anim{animation:up .25s ease}
+.onb-hero{text-align:center;padding:26px 0 8px}
+.onb-logo{width:96px;height:96px;border-radius:26px;overflow:hidden;position:relative;margin:0 auto;background:#0f1725;box-shadow:0 14px 34px rgba(15,23,37,.25)}
+.onb-logo img{position:absolute;width:121px;height:121px;left:-12.4px;top:-12.3px}
+.onb h1{font-size:29px;line-height:1.08;letter-spacing:-1.1px;margin:18px 0 8px}
+.onb p.lead{font-size:14px;color:var(--muted);margin:0 0 18px;line-height:1.45}
+.onb-feats{display:grid;gap:9px;margin:18px 0}
+.onb-feat{display:flex;gap:12px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px;box-shadow:var(--shadow);font-size:13px;color:#3b404a;text-align:left}
+.onb-feat b{display:block;color:var(--text);font-size:14px}.onb-feat .e{font-size:22px;width:40px;height:40px;border-radius:12px;background:var(--accentSoft);display:grid;place-items:center;flex:none}
+.onb-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.onb-card{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:14px 12px;text-align:left;box-shadow:var(--shadow);color:var(--text);font-weight:800;font-size:13px;line-height:1.25;min-height:84px}
+.onb-card .e{display:block;font-size:24px;margin-bottom:8px}
+.onb-card.sel{border-color:var(--accent);background:#f6f3ff;box-shadow:0 0 0 3px rgba(108,77,246,.15)}
+.onb-card.wide{grid-column:1/-1;min-height:0;display:flex;align-items:center;gap:10px}.onb-card.wide .e{margin:0}
+.onb-count{font-size:12px;color:var(--muted);font-weight:700;margin:4px 0 12px}
+.onb-chips{display:flex;flex-wrap:wrap;gap:8px}
+.onb-chip{display:inline-flex;align-items:center;gap:7px;border-radius:99px;padding:9px 13px;font-size:13px;font-weight:750;background:#fff;border:1.5px solid var(--line);color:#8a909b;text-decoration:line-through}
+.onb-chip.on{background:var(--accentSoft);border-color:#d6ccff;color:var(--accent);text-decoration:none}
+.onb-add{display:flex;gap:8px;margin-top:14px}.onb-add input{flex:1;min-width:0;border:1px solid var(--line);background:#fff;border-radius:13px;padding:12px;font:inherit;outline:none}.onb-add input:focus{border-color:#c5baff}
+.onb-add button{background:var(--accent);color:#fff;border-radius:13px;padding:0 16px;font-weight:850}
+.onb-period{display:grid;gap:9px}
+.onb-dates{display:grid;gap:10px;margin-top:14px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--shadow)}
+.onb-foot{display:flex;gap:9px;padding-top:18px;position:sticky;bottom:0;background:linear-gradient(to top,var(--bg) 70%,rgba(245,246,250,0))}
+.onb-back{flex:none;background:#fff;border:1px solid var(--line);color:var(--text);border-radius:14px;padding:15px 16px;font-weight:800}
+.onb-next{flex:1;background:var(--accent);color:#fff;border-radius:14px;padding:15px;font-weight:850;font-size:15px}
+.onb-next:disabled{opacity:.45}
+.onb-note{font-size:11px;color:var(--muted);text-align:center;margin-top:10px;line-height:1.4}
 /* Schermata di caricamento */
 .splash{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;color:#fff;
  background:radial-gradient(620px 420px at 85% -10%,rgba(108,77,246,.45) 0%,rgba(108,77,246,0) 65%),radial-gradient(520px 380px at -10% 110%,rgba(46,98,190,.45) 0%,rgba(46,98,190,0) 60%),#0f1725;
@@ -333,7 +368,7 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
   <div class="handle"></div><div class="sheet-head"><h3 id="subjectTitle">Nuova materia</h3><button class="close" onclick="closeModal('subjectModal')">×</button></div>
   <div class="sheet-body"><div class="form">
    <div class="field"><label>NOME MATERIA</label><input id="subjectName" maxlength="40" placeholder="Es. Matematica"></div>
-   <div class="field"><label>ICONA</label><select id="subjectIcon"><option>📚</option><option>➗</option><option>💻</option><option>⚡</option><option>🔧</option><option>🌍</option><option>🇬🇧</option><option>🇮🇹</option><option>🧪</option><option>🎨</option><option>🏃</option><option>📐</option><option>📖</option></select></div>
+   <div class="field"><label>ICONA</label><select id="subjectIcon"><option>📚</option><option>➗</option><option>💻</option><option>⚡</option><option>🔧</option><option>🌍</option><option>🇬🇧</option><option>🇮🇹</option><option>🧪</option><option>🎨</option><option>🏃</option><option>📐</option><option>📖</option><option>📜</option><option>🏛️</option><option>⚛️</option><option>🤔</option><option>🧠</option><option>⚖️</option><option>💶</option><option>🔬</option><option>🧬</option><option>🎵</option><option>🖌️</option><option>🗿</option><option>🇫🇷</option><option>🇪🇸</option><option>🇩🇪</option><option>✝️</option><option>🗺️</option><option>🤝</option></select></div>
   </div></div>
   <div class="sheet-foot"><button class="cancel" onclick="closeModal('subjectModal')">Annulla</button><button class="save" onclick="saveSubject()">Salva</button></div>
  </div>
@@ -378,6 +413,7 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
   <div class="sheet-foot"><button class="cancel" onclick="closeModal('historyModal')">Chiudi</button></div>
  </div>
 </div>
+<div id="onboarding" class="onb" hidden><div class="onb-wrap" id="onbWrap"></div></div>
 <div id="toast" class="toast"></div>
 
 <script>
@@ -888,7 +924,8 @@ function importBackup(input){
   try{raw=JSON.parse(reader.result)}catch(e){return toast("File non valido: non è un backup SchoolFlow.")}
   const src=raw&&raw.data&&Array.isArray(raw.data.subjects)?raw.data:raw;
   if(!src||!Array.isArray(src.subjects))return toast("File non valido: non è un backup SchoolFlow.");
-  const merged=JSON.parse(JSON.stringify(data));
+  // dal benvenuto (telefono nuovo): si parte senza materie predefinite, solo quelle del backup
+  const merged=JSON.parse(JSON.stringify(onb?Object.assign({},data,{subjects:[]}):data));
   const st={newSubjects:0,addedGrades:0,updatedGrades:0,newPeriods:0};
   const localEmpty=!grades(data.subjects).length&&!(data.history||[]).length;
   const inSettings=Object.assign(defaultSettings(),src.settings||{});
@@ -937,10 +974,89 @@ function importBackup(input){
   if(!confirm(msg))return toast("Importazione annullata.");
   try{localStorage.setItem(KEY+"_before_import",JSON.stringify(data))}catch(e){}
   data=merged;viewPeriodId=null;
-  if(save()){renderAll();toast(`Importati ${st.addedGrades} voti, ${st.newSubjects} materie nuove.`)}
+  if(save()){if(onb)closeOnboarding();renderAll();toast(`Importati ${st.addedGrades} voti, ${st.newSubjects} materie nuove.`)}
  };
  reader.onerror=()=>toast("Impossibile leggere il file.");
  reader.readAsText(file);
+}
+// ================= BENVENUTO (PRIMO AVVIO) =================
+// Compare solo a chi non ha ancora nessun dato salvato: i dati esistenti non vengono mai toccati.
+const SCHOOLS={
+ scientifico:{name:"Liceo scientifico",icon:"🔬",subjects:[["Italiano","🇮🇹"],["Latino","📜"],["Inglese","🇬🇧"],["Storia","📖"],["Filosofia","🤔"],["Matematica","➗"],["Fisica","⚛️"],["Scienze naturali","🧪"],["Disegno e storia dell'arte","🎨"],["Scienze motorie","🏃"],["Educazione civica","🤝"],["Religione","✝️"]]},
+ classico:{name:"Liceo classico",icon:"🏛️",subjects:[["Italiano","🇮🇹"],["Latino","📜"],["Greco","🏛️"],["Inglese","🇬🇧"],["Storia","📖"],["Filosofia","🤔"],["Matematica","➗"],["Fisica","⚛️"],["Scienze naturali","🧪"],["Storia dell'arte","🎨"],["Scienze motorie","🏃"],["Educazione civica","🤝"],["Religione","✝️"]]},
+ linguistico:{name:"Liceo linguistico",icon:"🌍",subjects:[["Italiano","🇮🇹"],["Latino","📜"],["Inglese","🇬🇧"],["Francese","🇫🇷"],["Spagnolo","🇪🇸"],["Tedesco","🇩🇪"],["Storia","📖"],["Filosofia","🤔"],["Matematica","➗"],["Fisica","⚛️"],["Scienze naturali","🧪"],["Storia dell'arte","🎨"],["Scienze motorie","🏃"],["Educazione civica","🤝"],["Religione","✝️"]]},
+ umane:{name:"Liceo delle scienze umane",icon:"🧠",subjects:[["Italiano","🇮🇹"],["Latino","📜"],["Inglese","🇬🇧"],["Storia","📖"],["Filosofia","🤔"],["Scienze umane","🧠"],["Diritto ed economia","⚖️"],["Matematica","➗"],["Fisica","⚛️"],["Scienze naturali","🧪"],["Storia dell'arte","🎨"],["Scienze motorie","🏃"],["Educazione civica","🤝"],["Religione","✝️"]]},
+ artistico:{name:"Liceo artistico",icon:"🎨",subjects:[["Italiano","🇮🇹"],["Inglese","🇬🇧"],["Storia","📖"],["Filosofia","🤔"],["Matematica","➗"],["Fisica","⚛️"],["Scienze naturali","🧪"],["Storia dell'arte","🎨"],["Discipline pittoriche","🖌️"],["Discipline plastiche","🗿"],["Laboratorio artistico","🔧"],["Scienze motorie","🏃"],["Educazione civica","🤝"],["Religione","✝️"]]},
+ tecnologico:{name:"Istituto tecnico tecnologico",icon:"💻",subjects:[["Italiano","🇮🇹"],["Inglese","🇬🇧"],["Storia","📖"],["Matematica","➗"],["Fisica","⚛️"],["Chimica","🧪"],["Informatica","💻"],["Tecnologie e tecniche di rappresentazione grafica","📐"],["Scienze e tecnologie applicate","⚡"],["Scienze della Terra e biologia","🌍"],["Diritto ed economia","⚖️"],["Geografia","🗺️"],["Scienze motorie","🏃"],["Educazione civica","🤝"],["Religione","✝️"]]},
+ economico:{name:"Istituto tecnico economico",icon:"💶",subjects:[["Italiano","🇮🇹"],["Inglese","🇬🇧"],["Francese","🇫🇷"],["Storia","📖"],["Matematica","➗"],["Economia aziendale","💶"],["Diritto","⚖️"],["Economia politica","📊"],["Informatica","💻"],["Geografia","🗺️"],["Scienze integrate","🧪"],["Scienze motorie","🏃"],["Educazione civica","🤝"],["Religione","✝️"]]},
+ professionale:{name:"Istituto professionale",icon:"🔧",subjects:[["Italiano","🇮🇹"],["Inglese","🇬🇧"],["Storia","📖"],["Matematica","➗"],["Scienze integrate","🧪"],["Diritto ed economia","⚖️"],["Geografia","🗺️"],["Tecnologie dell'informazione","💻"],["Laboratori tecnologici","🔧"],["Scienze motorie","🏃"],["Educazione civica","🤝"],["Religione","✝️"]]},
+ media:{name:"Scuola media",icon:"🎒",subjects:[["Italiano","🇮🇹"],["Storia","📖"],["Geografia","🗺️"],["Matematica","➗"],["Scienze","🧪"],["Inglese","🇬🇧"],["Seconda lingua","🇫🇷"],["Tecnologia","🔧"],["Arte e immagine","🎨"],["Musica","🎵"],["Scienze motorie","🏃"],["Educazione civica","🤝"],["Religione","✝️"]]}
+};
+let onb=null;
+function onbYearStart(){const t=new Date();return t.getMonth()>=6?t.getFullYear():t.getFullYear()-1}
+function onbDefaults(type){const y=onbYearStart();
+ if(type==="quadrimestre")return[`${y+1}-01-31`,`${y+1}-06-08`,`${y+1}-06-08`];
+ if(type==="trimestri")return[`${y}-12-22`,`${y+1}-03-15`,`${y+1}-06-08`];
+ return[`${y}-12-22`,`${y+1}-06-08`,`${y+1}-06-08`];}
+function openOnboarding(){
+ onb={step:0,school:null,subjects:[],type:"trimestre_pentamestre",ends:onbDefaults("trimestre_pentamestre")};
+ document.getElementById("onboarding").hidden=false;document.documentElement.classList.add("onb-open");renderOnb();
+}
+function closeOnboarding(){const o=document.getElementById("onboarding");if(o)o.hidden=true;document.documentElement.classList.remove("onb-open");onb=null}
+function onbGo(n){onb.step=n;renderOnb();document.getElementById("onboarding").scrollTop=0}
+function onbPickSchool(k){onb.school=k;onb.subjects=k==="zero"?[]:SCHOOLS[k].subjects.map(([name,icon])=>({name,icon,on:true}));renderOnb()}
+function onbToggle(i){onb.subjects[i].on=!onb.subjects[i].on;renderOnb()}
+function onbAddSubject(){const inp=document.getElementById("onbNew");const name=(inp.value||"").trim().slice(0,40);if(!name)return;
+ if(onb.subjects.some(x=>x.name.toLowerCase()===name.toLowerCase()))return toast("Materia già presente.");
+ onb.subjects.push({name,icon:"📚",on:true});renderOnb();setTimeout(()=>document.getElementById("onbNew")?.focus(),30)}
+function onbSetType(t){onb.type=t;onb.ends=onbDefaults(t);renderOnb()}
+function onbSetEnd(i,v){onb.ends[i]=v}
+function onbSkip(){onb.school="zero";onb.subjects=[];onbFinish(true)}
+function onbFinish(skip){
+ const n=periodConfig(onb.type).names.length,ends=onb.ends.slice(0,n);
+ if(!skip){for(let k=0;k<n;k++){if(!ends[k])return toast("Inserisci tutte le date di fine periodo.");if(k&&ends[k]<=ends[k-1])return toast(`La fine del ${k+1}° periodo deve essere dopo la fine del ${k}°.`)}}
+ const y=onbYearStart(),d=onbDefaults(onb.type);
+ data={subjects:onb.subjects.filter(x=>x.on).map(x=>({id:id(),name:x.name,icon:x.icon,grades:[]})),
+  settings:{periodType:onb.type,schoolYear:`${y}/${String(y+1).slice(-2)}`,firstPeriodEnd:ends[0]||d[0],secondPeriodEnd:ends[1]||d[1],thirdPeriodEnd:(n===3?ends[2]:ends[1])||d[2],currentPeriod:1},
+  history:[],onboarded:true};
+ save();closeOnboarding();viewPeriodId=null;showPage("home");
+ toast(data.subjects.length?"Tutto pronto! Tocca ＋ per aggiungere il primo voto.":"Tutto pronto! Aggiungi le tue materie da Materie.");
+}
+function renderOnb(){
+ const w=document.getElementById("onbWrap");if(!w||!onb)return;
+ const dots=`<div class="onb-dots">${[0,1,2,3].map(i=>`<i class="${i===onb.step?"on":""}"></i>`).join("")}</div>`;
+ let body="",foot="";
+ if(onb.step===0){
+  body=`<div class="onb-hero"><div class="onb-logo"><img src="SchoolFlow-logo.png" alt="Logo SchoolFlow"></div><h1>Benvenuto in SchoolFlow</h1><p class="lead">Registra i tuoi voti e tieni sotto controllo le medie, materia per materia.</p></div>
+  <div class="onb-feats">
+   <div class="onb-feat"><span class="e">📊</span><div><b>Medie automatiche</b>Media ponderata di ogni materia e generale.</div></div>
+   <div class="onb-feat"><span class="e">🎯</span><div><b>Quanto mi serve?</b>Scopri che voto ti serve alla prossima verifica.</div></div>
+   <div class="onb-feat"><span class="e">🔒</span><div><b>Privato e offline</b>I tuoi voti restano solo su questo telefono.</div></div>
+  </div>`;
+  foot=`<button class="onb-next" onclick="onbGo(1)">Iniziamo</button>`;
+ }else if(onb.step===1){
+  body=`<h1>Che scuola frequenti?</h1><p class="lead">Ti proponiamo le materie tipiche: potrai modificarle subito dopo.</p>
+  <div class="onb-grid">${Object.entries(SCHOOLS).map(([k,v])=>`<button class="onb-card ${onb.school===k?"sel":""}" onclick="onbPickSchool('${k}')"><span class="e">${v.icon}</span>${esc(v.name)}</button>`).join("")}
+  <button class="onb-card wide ${onb.school==="zero"?"sel":""}" onclick="onbPickSchool('zero')"><span class="e">✏️</span>Altro / Parto da zero</button></div>`;
+  foot=`<button class="onb-back" onclick="onbGo(0)">‹</button><button class="onb-next" ${onb.school?"":"disabled"} onclick="onbGo(2)">Avanti</button>`;
+ }else if(onb.step===2){
+  const on=onb.subjects.filter(x=>x.on).length;
+  body=`<h1>Le tue materie</h1><p class="lead">Tocca una materia per toglierla o rimetterla. Puoi aggiungerne altre.</p>
+  <div class="onb-count">${on} ${on===1?"materia selezionata":"materie selezionate"}</div>
+  <div class="onb-chips">${onb.subjects.map((x,i)=>`<button class="onb-chip ${x.on?"on":""}" onclick="onbToggle(${i})">${x.icon} ${esc(x.name)}</button>`).join("")||'<span class="onb-count">Nessuna materia: aggiungine una qui sotto.</span>'}</div>
+  <div class="onb-add"><input id="onbNew" maxlength="40" placeholder="Aggiungi una materia…" onkeydown="if(event.key==='Enter')onbAddSubject()"><button onclick="onbAddSubject()">＋</button></div>`;
+  foot=`<button class="onb-back" onclick="onbGo(1)">‹</button><button class="onb-next" onclick="onbGo(3)">Avanti</button>`;
+ }else{
+  const cfg=periodConfig(onb.type),types=[["trimestre_pentamestre","Trimestre + Pentamestre","📅"],["quadrimestre","2 Quadrimestri","🗓️"],["trimestri","3 Trimestri","📆"]];
+  body=`<h1>Il tuo anno scolastico</h1><p class="lead">Quando un periodo finisce, i suoi voti vengono conservati e l'app passa al successivo.</p>
+  <div class="onb-period">${types.map(([k,n,e])=>`<button class="onb-card wide ${onb.type===k?"sel":""}" onclick="onbSetType('${k}')"><span class="e">${e}</span>${n}</button>`).join("")}</div>
+  <div class="onb-dates">${cfg.labels.map((l,i)=>`<div class="field"><label>${esc(l.toUpperCase())}</label><input type="date" value="${onb.ends[i]||""}" onchange="onbSetEnd(${i},this.value)"></div>`).join("")}</div>
+  <p class="onb-note">Le date sono proposte in automatico: controllale con il calendario della tua scuola. Puoi cambiarle quando vuoi in Impostazioni.</p>`;
+  foot=`<button class="onb-back" onclick="onbGo(2)">‹</button><button class="onb-next" onclick="onbFinish()">Inizia a usare SchoolFlow</button>`;
+ }
+ const top=`<div class="onb-top">${dots}${onb.step===0?`<button class="onb-link" onclick="document.getElementById('importFile').click()">Ho un backup</button>`:`<button class="onb-link" onclick="onbSkip()">Salta</button>`}</div>`;
+ const anim=onb.shown!==onb.step;onb.shown=onb.step;
+ w.innerHTML=top+`<div class="onb-body${anim?" anim":""}">${body}</div><div class="onb-foot">${foot}</div>`;
 }
 // ================= NUOVO ANNO SCOLASTICO =================
 function nextSchoolYear(y){
@@ -1084,8 +1200,10 @@ function closeModal(id){document.getElementById(id).classList.remove("show")}
 document.querySelectorAll(".modal-wrap").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)m.classList.remove("show")}));
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(window.tt);window.tt=setTimeout(()=>t.classList.remove("show"),2200)}
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+let sfFirstRun=false;try{sfFirstRun=!localStorage.getItem(KEY)}catch(e){}
 checkAutomaticPeriod();
 renderAll();
+if(sfFirstRun)openOnboarding();
 runSplash();
 // Funzionamento offline: registra il service worker (non tocca i voti salvati)
 if("serviceWorker" in navigator&&location.protocol!=="file:"){
