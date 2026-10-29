@@ -244,6 +244,15 @@ html[data-theme="dark"] .toast{box-shadow:0 0 0 1px #3a3f4d,0 10px 30px rgba(0,0
 html[data-theme="dark"] .onb-logo{box-shadow:0 14px 34px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.08)}
 html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.7}
 .trend-chart .cg{stroke:var(--d-grid,#eceef2)}.trend-chart .ct{fill:var(--d-muted,#9096a1)}.trend-chart .cp{stroke:var(--card)}
+/* Scelta rapida del voto */
+.gpick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;max-height:232px;overflow-y:auto;overscroll-behavior:contain;padding:2px;margin-bottom:8px;scroll-behavior:smooth}
+.gp{background:var(--d-soft,#f7f7fa);border:1.5px solid transparent;border-radius:12px;padding:8px 0 7px;font-weight:900;font-size:16px;line-height:1.1;color:var(--text)}
+.gp.good{color:var(--green)}.gp.mid{color:var(--orange)}.gp.bad{color:var(--red)}
+.gp small{display:block;font-size:9px;color:var(--muted);font-weight:700;margin-top:2px}
+.gp.on{background:var(--accent);border-color:var(--accent);color:#fff!important}.gp.on small{color:rgba(255,255,255,.85)}
+.gp-empty{visibility:hidden}
+.gval-row{display:flex;align-items:center;gap:8px}.gval-row label{margin:0!important;white-space:nowrap}
+.gval-row input{flex:1;min-width:0}
 /* Scelta del tema */
 .theme-seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;background:var(--card);border:1px solid var(--line);border-radius:17px;padding:6px;box-shadow:var(--shadow)}
 .theme-seg button{background:none;color:var(--muted);border-radius:12px;padding:11px 4px;font-size:12px;font-weight:850;display:flex;flex-direction:column;align-items:center;gap:4px}
@@ -415,12 +424,14 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{fi
   <div class="handle"></div><div class="sheet-head"><h3 id="gradeModalTitle">Aggiungi voto</h3><button class="close" onclick="closeModal('gradeModal')">×</button></div>
   <div class="sheet-body"><div class="form">
    <div class="field"><label>MATERIA</label><select id="gradeSubject"></select></div>
-   <div class="field"><label>VOTO</label><input id="gradeValue" type="text" inputmode="decimal" autocomplete="off" placeholder="7,5" oninput="previewGrade()"></div>
+   <div class="field"><label>VOTO <span id="gradePickLabel" style="letter-spacing:0;color:var(--accent)"></span></label>
+    <div id="gradePick" class="gpick" role="listbox" aria-label="Scegli il voto"></div>
+    <div class="gval-row"><label for="gradeValue">OPPURE SCRIVILO</label><input id="gradeValue" type="text" autocomplete="off" placeholder="es. 7,5 · 6+ · 6/7" oninput="previewGrade()"></div></div>
    <div class="field"><label>PESO DEL VOTO (%)</label><input id="gradeWeight" type="text" inputmode="decimal" autocomplete="off" value="100" oninput="previewGrade()"></div>
    <div class="field"><label>TIPO</label><select id="gradeType"><option>Orale</option><option>Scritto</option><option>Pratico</option><option>Compito</option><option>Altro</option></select></div>
    <div class="field"><label>DATA</label><input id="gradeDate" type="date"></div>
    <div class="field"><label>NOTE</label><input id="gradeNote" maxlength="100" placeholder="Facoltativo"></div>
-   <div id="gradePreview" class="preview">Inserisci un voto per vedere il peso.</div>
+   <div id="gradePreview" class="preview">Tocca un voto qui sopra.</div>
   </div></div>
   <div class="sheet-foot"><button class="cancel" onclick="closeModal('gradeModal')">Annulla</button><button id="gradeSaveButton" class="save" onclick="saveGrade()">Aggiungi voto</button></div>
  </div>
@@ -661,7 +672,7 @@ function renderGrades(){
  const q=(document.getElementById("gradeSearch")?.value||"").toLowerCase();
  const ro=isArchiveView();
  const gs=viewGrades().filter(g=>`${g.subject} ${g.type} ${g.note||""}`.toLowerCase().includes(q)).sort((a,b)=>new Date(b.date)-new Date(a.date));
- document.getElementById("gradeList").innerHTML=gs.length?gs.map(g=>{const d=g.date?new Date(g.date+"T12:00:00").toLocaleDateString("it-IT"):"—";return `<div class="grade-card"><div class="subject-icon">${g.icon}</div><div><div class="grade-subject">${esc(g.subject)}</div><div class="grade-details">${esc(g.type)} · ${d}${g.note?" · "+esc(g.note):""}</div></div><div class="grade-right"><div class="grade-value ${cls(n(g.value))}">${f(n(g.value))}</div><div class="weight">${f(n(g.weight,100))}% peso</div></div>${ro?"":`<div class="grade-actions"><button class="action" aria-label="Modifica voto" onclick="editGrade('${g.subjectId}','${g.id}')">✎</button><button class="action delete" aria-label="Elimina voto" onclick="deleteGrade('${g.subjectId}','${g.id}')">×</button></div>`}</div>`}).join(""):`<div class="empty"><b>Nessun voto</b>Quando inserirai un voto apparirà qui.</div>`;
+ document.getElementById("gradeList").innerHTML=gs.length?gs.map(g=>{const d=g.date?new Date(g.date+"T12:00:00").toLocaleDateString("it-IT"):"—";return `<div class="grade-card"><div class="subject-icon">${g.icon}</div><div><div class="grade-subject">${esc(g.subject)}</div><div class="grade-details">${esc(g.type)} · ${d}${g.note?" · "+esc(g.note):""}</div></div><div class="grade-right"><div class="grade-value ${cls(n(g.value))}">${gradeLabel(n(g.value))}</div><div class="weight">${f(n(g.weight,100))}% peso</div></div>${ro?"":`<div class="grade-actions"><button class="action" aria-label="Modifica voto" onclick="editGrade('${g.subjectId}','${g.id}')">✎</button><button class="action delete" aria-label="Elimina voto" onclick="deleteGrade('${g.subjectId}','${g.id}')">×</button></div>`}</div>`}).join(""):`<div class="empty"><b>Nessun voto</b>Quando inserirai un voto apparirà qui.</div>`;
 }
 
 let currentSubjectId=null;
@@ -698,7 +709,7 @@ function renderSubjectDetail(){
        <div class="grade-subject">${esc(g.type)}</div>
        <div class="grade-details">${d} · Peso ${f(n(g.weight,100))}%${g.note?" · "+esc(g.note):""}</div>
      </div>
-     <div class="grade-right"><div class="grade-value ${cls(n(g.value))}">${f(n(g.value))}</div></div>
+     <div class="grade-right"><div class="grade-value ${cls(n(g.value))}">${gradeLabel(n(g.value))}</div></div>
      ${ro?"":`<div class="grade-actions">
        <button class="action" onclick="editGrade('${s.id}','${g.id}')">✎</button>
        <button class="action delete" onclick="deleteGradeFromDetail('${s.id}','${g.id}')">×</button>
@@ -715,7 +726,7 @@ function editGrade(subjectId,gradeId){
  const sel=document.getElementById("gradeSubject");
  sel.innerHTML=data.subjects.map(x=>`<option value="${x.id}">${x.icon} ${esc(x.name)}</option>`).join("");
  sel.value=subjectId;
- document.getElementById("gradeValue").value=String(g.value??"").replace(".",",");
+ document.getElementById("gradeValue").value=Number.isFinite(n(g.value,NaN))?gradeLabel(n(g.value)).replace(".",","):"";
  document.getElementById("gradeWeight").value=String(g.weight??100).replace(".",",");
  document.getElementById("gradeType").value=g.type;
  document.getElementById("gradeDate").value=g.date||"";
@@ -723,7 +734,7 @@ function editGrade(subjectId,gradeId){
  document.getElementById("gradeModalTitle").textContent="Modifica voto";
  document.getElementById("gradeSaveButton").textContent="Salva modifiche";
  previewGrade();
- document.getElementById("gradeModal").classList.add("show");
+ document.getElementById("gradeModal").classList.add("show");setTimeout(()=>renderGradePick(true),30);
 }
 
 function deleteGradeFromDetail(subjectId,gradeId){
@@ -846,7 +857,7 @@ function openHistory(historyId){
  (h.subjects||[]).forEach(s=>{
   const a=average(s.grades||[]),gs=(s.grades||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
   if(!gs.length)return;
-  rows.push(`<div class="avg-card"><div class="avg-head"><strong>${s.icon} ${esc(s.name)}</strong><b class="${cls(a)}">${a==null?"—":f(a)}</b></div><div class="avg-meta"><span>${gs.length} ${gs.length===1?"voto":"voti"}</span><span>media ponderata</span></div>${gs.map(g=>{const d=g.date?new Date(g.date+"T12:00:00").toLocaleDateString("it-IT"):"—";return `<div style="display:flex;align-items:center;gap:10px;padding-top:10px;margin-top:10px;border-top:1px solid var(--line)"><div style="flex:1"><b>${esc(g.type)}</b><div class="grade-details">${d}${g.note?" · "+esc(g.note):""} · Peso ${f(n(g.weight,100))}%</div></div><div class="grade-value ${cls(n(g.value))}">${f(n(g.value))}</div></div>`}).join("")}</div>`);
+  rows.push(`<div class="avg-card"><div class="avg-head"><strong>${s.icon} ${esc(s.name)}</strong><b class="${cls(a)}">${a==null?"—":f(a)}</b></div><div class="avg-meta"><span>${gs.length} ${gs.length===1?"voto":"voti"}</span><span>media ponderata</span></div>${gs.map(g=>{const d=g.date?new Date(g.date+"T12:00:00").toLocaleDateString("it-IT"):"—";return `<div style="display:flex;align-items:center;gap:10px;padding-top:10px;margin-top:10px;border-top:1px solid var(--line)"><div style="flex:1"><b>${esc(g.type)}</b><div class="grade-details">${d}${g.note?" · "+esc(g.note):""} · Peso ${f(n(g.weight,100))}%</div></div><div class="grade-value ${cls(n(g.value))}">${gradeLabel(n(g.value))}</div></div>`}).join("")}</div>`);
  });
  document.getElementById("historyModalBody").innerHTML=rows.length?rows.join(""):`<div class="empty"><b>Nessun voto</b>Non risultano voti archiviati in questo periodo.</div>`;
  document.getElementById("historyModal").classList.add("show");
@@ -1205,15 +1216,43 @@ function openGradeModal(subjectId=null){
  const sel=document.getElementById("gradeSubject");sel.innerHTML=data.subjects.map(s=>`<option value="${s.id}">${s.icon} ${esc(s.name)}</option>`).join("");
  if(subjectId)sel.value=subjectId;
  document.getElementById("gradeValue").value="";document.getElementById("gradeWeight").value=100;document.getElementById("gradeType").value="Orale";document.getElementById("gradeDate").value=todayISO();document.getElementById("gradeNote").value="";previewGrade();
- document.getElementById("gradeModal").classList.add("show");setTimeout(()=>document.getElementById("gradeValue").focus(),80);
+ document.getElementById("gradeModal").classList.add("show");setTimeout(()=>renderGradePick(true),30);
 }
+// ---- Voti "all'italiana": 6+ = 6,25 · 6- = 5,75 · 6½ (o 6/7) = 6,5. Nei dati resta sempre il numero.
+const GRADE_ROWS=[1,2,3,4,5,6,7,8,9,10].map(N=>[N>1?[N+"-",N-.25]:null,[String(N),N],N<10?[N+"+",N+.25]:null,N<10?[N+"½",N+.5]:null]);
+function gradeLabel(v){
+ if(!Number.isFinite(v))return "—";
+ if(v<0.75||v>10||Math.abs(v*4-Math.round(v*4))>1e-9)return f(v);
+ const fl=Math.floor(v+1e-9),fr=Math.round((v-fl)*4);
+ return fr===0?String(fl):fr===1?fl+"+":fr===2?fl+"½":(fl+1)+"-";
+}
+function parseGrade(t){
+ t=String(t??"").trim().toLowerCase().replace(/\s+/g," ");
+ let m=t.match(/^(\d{1,2})\s*([+-])$/);if(m)return +m[1]+(m[2]==="+"?.25:-.25);
+ m=t.match(/^(\d{1,2})\s*(½|1\/2|e mezzo|\.5|,5)$/);if(m)return +m[1]+.5;
+ m=t.match(/^(\d{1,2})\s*[\/-]\s*(\d{1,2})$/);if(m&&+m[2]===+m[1]+1)return +m[1]+.5;
+ return parseNum(t);
+}
+function renderGradePick(scroll){
+ const box=document.getElementById("gradePick");if(!box)return;
+ const cur=parseGrade(document.getElementById("gradeValue").value);
+ if(!box.dataset.built){
+  box.innerHTML=GRADE_ROWS.map(r=>r.map(c=>c?`<button type="button" class="gp ${cls(c[1])}" data-v="${c[1]}" data-l="${c[0]}" onclick="pickGrade(this)">${c[0]}<small>${f(c[1])}</small></button>`:'<span class="gp gp-empty"></span>').join("")).join("");
+  box.dataset.built="1";
+ }
+ let sel=null;box.querySelectorAll(".gp[data-v]").forEach(b=>{const on=Number.isFinite(cur)&&Math.abs(+b.dataset.v-cur)<1e-9;b.classList.toggle("on",on);b.setAttribute("aria-selected",on?"true":"false");if(on)sel=b});
+ document.getElementById("gradePickLabel").textContent=Number.isFinite(cur)&&cur>=0&&cur<=10?"· "+gradeLabel(cur):"";
+ if(scroll){const target=sel||box.querySelector('.gp[data-v="6"]');box.style.scrollBehavior="auto";box.scrollTop=Math.max(0,target.offsetTop-box.offsetTop-(sel?70:28));box.style.scrollBehavior=""}
+}
+function pickGrade(b){document.getElementById("gradeValue").value=b.dataset.l;previewGrade()}
 function previewGrade(){
- const v=parseNum(document.getElementById("gradeValue").value);let w=parseNum(document.getElementById("gradeWeight").value);if(!Number.isFinite(w))w=100;
- document.getElementById("gradePreview").innerHTML=Number.isFinite(v)?`Questo voto vale <strong>${f(v)} × ${f(w)}%</strong> nel calcolo della media.`:"Inserisci un voto per vedere il peso.";
+ const v=parseGrade(document.getElementById("gradeValue").value);let w=parseNum(document.getElementById("gradeWeight").value);if(!Number.isFinite(w))w=100;
+ document.getElementById("gradePreview").innerHTML=Number.isFinite(v)?`Questo voto vale <strong>${f(v)} × ${f(w)}%</strong> nel calcolo della media.`:"Tocca un voto qui sopra.";
+ renderGradePick(false);
 }
 function saveGrade(){
  const sid=document.getElementById("gradeSubject").value;
- const v=parseNum(document.getElementById("gradeValue").value);
+ const v=parseGrade(document.getElementById("gradeValue").value);
  const w=parseNum(document.getElementById("gradeWeight").value);
  if(!Number.isFinite(v)||v<0||v>10)return toast("Inserisci un voto tra 0 e 10.");
  if(!Number.isFinite(w)||w<1||w>1000)return toast("Il peso deve essere tra 1% e 1000%.");
@@ -1244,7 +1283,7 @@ function saveGrade(){
  }else{
    s.grades=s.grades||[];
    s.grades.push({...gradeData,id:id()});
-   toast(`Voto ${f(v)} aggiunto a ${s.name}.`);
+   toast(`Voto ${gradeLabel(v)} aggiunto a ${s.name}.`);
  }
  editingGrade=null;
  save();closeModal("gradeModal");renderAll();
