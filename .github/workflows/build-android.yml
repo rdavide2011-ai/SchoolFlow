@@ -1,0 +1,169 @@
+name: SchoolFlow Android AAB (test build)
+
+on:
+  push:
+    paths:
+      - 'index.html'
+      - 'SchoolFlow-logo.png'
+      - 'manifest.webmanifest'
+      - 'sw.js'
+      - '.github/workflows/build-android.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Create native Android project
+        shell: bash
+        run: |
+          mkdir -p android-app/app/src/main/assets android-app/app/src/main/java/it/rivapps/schoolflow
+          cp index.html SchoolFlow-logo.png manifest.webmanifest sw.js android-app/app/src/main/assets/
+          cat > android-app/settings.gradle <<'EOF'
+          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+          dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
+          rootProject.name = 'SchoolFlowAndroid'
+          include ':app'
+          EOF
+          cat > android-app/build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application' version '8.7.3' apply false
+          }
+          EOF
+          cat > android-app/app/build.gradle <<'EOF'
+          plugins { id 'com.android.application' }
+          android {
+              namespace 'it.rivapps.schoolflow'
+              compileSdk 35
+              defaultConfig {
+                  applicationId 'it.rivapps.schoolflow'
+                  minSdk 24
+                  targetSdk 35
+                  versionCode 5
+                  versionName '1.0.5'
+              }
+              compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+          }
+          dependencies { implementation 'androidx.webkit:webkit:1.12.1' }
+          EOF
+          cat > android-app/app/src/main/AndroidManifest.xml <<'EOF'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <application android:label="SchoolFlow" android:usesCleartextTraffic="false" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:allowBackup="true">
+                  <activity android:name=".MainActivity" android:exported="true" android:windowSoftInputMode="adjustResize">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+          cat > android-app/app/src/main/java/it/rivapps/schoolflow/MainActivity.java <<'EOF'
+          package it.rivapps.schoolflow;
+          import android.app.*;
+          import android.os.*;
+          import android.content.*;
+          import android.net.Uri;
+          import android.webkit.*;
+          import android.view.*;
+          import androidx.webkit.WebViewAssetLoader;
+          import androidx.webkit.WebViewClientCompat;
+          import java.io.OutputStream;
+          import java.nio.charset.StandardCharsets;
+          public class MainActivity extends Activity {
+              private WebView web;
+              private ValueCallback<Uri[]> upload;
+              private String pendingBackup;
+              private static final int PICK=100, SAVE=101;
+              @Override public void onCreate(Bundle state) {
+                  super.onCreate(state);
+                  web=new WebView(this);setContentView(web);
+                  web.getSettings().setJavaScriptEnabled(true);
+                  web.getSettings().setDomStorageEnabled(true);
+                  web.getSettings().setAllowFileAccess(false);
+                  web.getSettings().setAllowContentAccess(true);
+                  web.getSettings().setMediaPlaybackRequiresUserGesture(false);
+                  WebViewAssetLoader loader=new WebViewAssetLoader.Builder().addPathHandler("/assets/",new WebViewAssetLoader.AssetsPathHandler(this)).build();
+                  web.setWebViewClient(new WebViewClientCompat(){
+                      @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){
+                          return loader.shouldInterceptRequest(request.getUrl());
+                      }
+                      @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest request) {
+                          Uri u=request.getUrl();
+                          return !("appassets.androidplatform.net".equals(u.getHost())&&"https".equals(u.getScheme()));
+                      }
+                      @Override public void onPageFinished(WebView view,String url) {
+                          String js="window.downloadFile=function(text,name,done){SchoolFlowAndroid.saveBackup(text,name);if(done)done();};";
+                          web.evaluateJavascript(js,null);
+                      }
+                  });
+                  web.setWebChromeClient(new WebChromeClient(){
+                      @Override public boolean onShowFileChooser(WebView v,ValueCallback<Uri[]> cb,FileChooserParams params){
+                          if(upload!=null)upload.onReceiveValue(null);upload=cb;
+                          Intent i=new Intent(Intent.ACTION_GET_CONTENT);i.setType("*/*");i.addCategory(Intent.CATEGORY_OPENABLE);
+                          startActivityForResult(Intent.createChooser(i,"Importa backup"),PICK);return true;
+                      }
+                  });
+                  web.addJavascriptInterface(new Object(){
+                      @JavascriptInterface public void setTheme(boolean dark) {
+                          runOnUiThread(()->getWindow().setStatusBarColor(dark?0xff0b0c10:0xfff5f6fa));
+                      }
+                      @JavascriptInterface public void saveBackup(String json,String name){
+                          pendingBackup=json;
+                          runOnUiThread(()->{
+                              Intent i=new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                              i.setType("application/json");i.addCategory(Intent.CATEGORY_OPENABLE);
+                              i.putExtra(Intent.EXTRA_TITLE,name);
+                              startActivityForResult(i,SAVE);
+                          });
+                      }
+                  },"SchoolFlowAndroid");
+                  web.loadUrl("https://appassets.androidplatform.net/assets/index.html");
+              }
+              @Override protected void onActivityResult(int request,int result,Intent data){
+                  super.onActivityResult(request,result,data);
+                  if(request==PICK){
+                      if(upload!=null){upload.onReceiveValue(result==RESULT_OK&&data!=null&&data.getData()!=null?new Uri[]{data.getData()}:null);upload=null;}
+                  }else if(request==SAVE&&result==RESULT_OK&&data!=null&&pendingBackup!=null){
+                      try(OutputStream out=getContentResolver().openOutputStream(data.getData())){
+                          if(out!=null)out.write(pendingBackup.getBytes(StandardCharsets.UTF_8));
+                      }catch(Exception e){android.widget.Toast.makeText(this,"Errore salvataggio backup",android.widget.Toast.LENGTH_LONG).show();}
+                      pendingBackup=null;
+                  }
+              }
+              @Override public void onBackPressed(){
+                  web.evaluateJavascript("(function(){var m=document.querySelector('.modal-wrap.show');if(m){m.classList.remove('show');return true}return false})()",v->{if(!"true".equals(v))super.onBackPressed();});
+              }
+          }
+          EOF
+          cd android-app
+          gradle wrapper --gradle-version 8.9
+      - name: Verify embedded app and JavaScript
+        run: |
+          test -s android-app/app/src/main/assets/index.html
+          grep -q "function multiChart(" android-app/app/src/main/assets/index.html
+          grep -q "schoolflow_chart_mode" android-app/app/src/main/assets/index.html
+          node -e "const f=require('fs').readFileSync('android-app/app/src/main/assets/index.html','utf8');for(const m of f.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/g))new Function(m[1]);console.log('JavaScript syntax OK')"
+      - name: Build Android App Bundle
+        run: cd android-app && ./gradlew --no-daemon :app:bundleRelease :app:assembleDebug
+      - name: Inspect artifacts
+        run: |
+          unzip -t android-app/app/build/outputs/bundle/release/app-release.aab | tail -n 2
+          ls -lh android-app/app/build/outputs/bundle/release/app-release.aab android-app/app/build/outputs/apk/debug/app-debug.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SchoolFlow-Android-build-test
+          path: |
+            android-app/app/build/outputs/bundle/release/app-release.aab
+            android-app/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
