@@ -264,6 +264,15 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{fi
 .theme-seg button .e{font-size:19px}
 .theme-seg button.on{background:var(--accentSoft);color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent)}
 .theme-note{font-size:11px;color:var(--muted);margin:8px 4px 16px}
+/* Filtri Home: solo presentazione delle materie, nessuna modifica ai voti */
+.home-subject-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 4px}
+.home-subject-filters{display:flex;gap:6px;flex-wrap:wrap;flex:1 1 auto}
+.home-filter{background:var(--card);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:10px 11px;font-size:11px;font-weight:800;min-height:42px;white-space:nowrap}
+.home-filter.active{background:var(--accentSoft);color:var(--accent);border-color:var(--d-accline,#c9befb)}
+.home-subject-sort{background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:12px;min-height:42px;padding:8px 10px;font-size:11px;font-weight:800;max-width:180px}
+.home-subject-count{margin:3px 2px 12px;font-size:11px;color:var(--muted)}
+.home-filter:focus-visible,.home-subject-sort:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:360px){.home-subject-filters{gap:4px}.home-filter{font-size:10px;padding:9px}.home-subject-sort{max-width:100%;width:100%}}
 </style>
 </head>
 <body>
@@ -290,6 +299,19 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{fi
   <div id="yearBanner" class="year-banner"><span id="yearBannerText">Anno scolastico concluso.</span><button onclick="startNewSchoolYear()">Inizia nuovo anno</button></div>
  </div>
  <div class="section-title"><h2>Le tue materie</h2><button onclick="showPage('subjects')">Gestisci</button></div>
+ <div class="home-subject-tools">
+  <div class="home-subject-filters" role="group" aria-label="Filtra le materie per media">
+   <button type="button" class="home-filter active" data-home-filter="all" aria-pressed="true" onclick="setHomeSubjectFilter('all')">Tutte</button>
+   <button type="button" class="home-filter" data-home-filter="low" aria-pressed="false" onclick="setHomeSubjectFilter('low')">Da recuperare</button>
+   <button type="button" class="home-filter" data-home-filter="ok" aria-pressed="false" onclick="setHomeSubjectFilter('ok')">Sufficienti</button>
+  </div>
+  <select class="home-subject-sort" id="homeSubjectSort" aria-label="Ordina le materie" onchange="renderHome()" >
+   <option value="default">Ordine originale</option>
+   <option value="best">Media più alta</option>
+   <option value="worst">Media più bassa</option>
+  </select>
+ </div>
+ <p id="homeSubjectCount" class="home-subject-count" aria-live="polite"></p>
  <div id="homeSubjects" class="subjects"></div>
  <div class="section-title"><h2>Azioni rapide</h2></div>
  <div class="quick-grid">
@@ -658,13 +680,40 @@ function subjectCard(s){
  const a=sAvg(s),count=(s.grades||[]).length;
  return `<div class="subject" onclick="openSubjectDetail('${s.id}')"><div class="subject-icon">${s.icon}</div><div class="subject-main"><div class="subject-name">${esc(s.name)}</div><div class="subject-count">${count} ${count===1?"voto":"voti"}</div><div class="progress"><i style="width:${a==null?0:Math.max(0,Math.min(100,a*10))}%"></i></div></div><div class="subject-score"><strong class="${cls(a)}">${a==null?"—":f(a)}</strong><small>media</small></div></div>`
 }
+let homeSubjectFilter="all";
+function setHomeSubjectFilter(filter){
+ homeSubjectFilter=["all","low","ok"].includes(filter)?filter:"all";
+ document.querySelectorAll("[data-home-filter]").forEach(button=>{
+  const selected=button.dataset.homeFilter===homeSubjectFilter;
+  button.classList.toggle("active",selected);
+  button.setAttribute("aria-pressed",String(selected));
+ });
+ renderHome();
+}
 function renderHome(){
  const gs=viewGrades(),a=average(gs);
  document.getElementById("homeHello").textContent="PANORAMICA · "+viewPeriodName().toUpperCase();
  document.getElementById("homeAvg").textContent=a==null?"—":f(a);
  document.getElementById("homeAvgInfo").textContent=a==null?"Aggiungi i tuoi primi voti":a>=6?"Stai andando bene":"Puoi ancora recuperare";
  document.getElementById("homeAvgPill").textContent=`${gs.length} ${gs.length===1?"voto":"voti"}`;
- document.getElementById("homeSubjects").innerHTML=viewSubjects().map(subjectCard).join("")||`<div class="empty"><b>Nessuna materia</b>Aggiungi la prima materia.</div>`;
+ const allSubjects=viewSubjects();
+ const sortMode=document.getElementById("homeSubjectSort")?.value||"default";
+ const filteredSubjects=allSubjects.filter(s=>{
+  const media=sAvg(s);
+  if(homeSubjectFilter==="low")return media!==null&&media<6;
+  if(homeSubjectFilter==="ok")return media!==null&&media>=6;
+  return true;
+ });
+ if(sortMode==="best"||sortMode==="worst"){
+  filteredSubjects.sort((x,y)=>{
+   const ax=sAvg(x),ay=sAvg(y);
+   if(ax===null)return ay===null?0:1;
+   if(ay===null)return -1;
+   return sortMode==="best"?ay-ax:ax-ay;
+  });
+ }
+ document.getElementById("homeSubjectCount").textContent=`${filteredSubjects.length} ${filteredSubjects.length===1?"materia visualizzata":"materie visualizzate"}`;
+ document.getElementById("homeSubjects").innerHTML=filteredSubjects.map(subjectCard).join("")||(allSubjects.length?`<div class="empty"><b>Nessuna materia in questa categoria</b>Scegli un altro filtro per vedere le tue materie.</div>`:`<div class="empty"><b>Nessuna materia</b>Aggiungi la prima materia.</div>`);
 }
 function renderSubjects(){
  const q=(document.getElementById("subjectSearch")?.value||"").toLowerCase();
