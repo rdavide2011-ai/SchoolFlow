@@ -317,6 +317,9 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{fi
 .subject-undo button{background:var(--accent);color:white;border-radius:10px;padding:10px 14px;min-height:40px;font-weight:850;flex:none}
 @media(min-width:700px){.subject-undo{bottom:24px}}
 @media(max-width:360px){.subject-manage{padding:10px}.subject-manage-top{gap:9px}.subject-manage-actions{gap:6px}.subject-action{font-size:10px}}
+/* Undo voto: riusa la notifica di ripristino della materia, separando i due avvisi */
+.subject-undo.show + .grade-undo.show{bottom:calc(148px + env(safe-area-inset-bottom))}
+@media(min-width:700px){.subject-undo.show + .grade-undo.show{bottom:90px}}
 </style>
 </head>
 <body>
@@ -551,6 +554,7 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{fi
 <div id="onboarding" class="onb" hidden><div class="onb-wrap" id="onbWrap"></div></div>
 <div id="toast" class="toast"></div>
 <div id="subjectUndo" class="subject-undo" role="status" aria-live="polite"><span id="subjectUndoLabel"></span><button type="button" onclick="undoSubjectDelete()">Annulla</button></div>
+<div id="gradeUndo" class="subject-undo grade-undo" role="status" aria-live="polite"><span id="gradeUndoLabel"></span><button type="button" onclick="undoGradeDelete()">Annulla</button></div>
 
 <script>
 const KEY="schoolflow_mobile_v2";
@@ -890,11 +894,7 @@ function editGrade(subjectId,gradeId){
 }
 
 function deleteGradeFromDetail(subjectId,gradeId){
- if(!confirm("Eliminare questo voto?"))return;
- const s=data.subjects.find(x=>x.id===subjectId);
- if(!s)return;
- s.grades=(s.grades||[]).filter(g=>g.id!==gradeId);
- save();renderAll();renderSubjectDetail();toast("Voto eliminato.");
+ return deleteGrade(subjectId,gradeId);
 }
 
 function getSubjectTrend(s){
@@ -1499,7 +1499,52 @@ function saveGrade(){
  save();closeModal("gradeModal");renderAll();
  if(currentSubjectId)renderSubjectDetail();
 }
-function deleteGrade(sid,gid){const s=data.subjects.find(x=>x.id===sid);if(!s)return;if(!confirm("Eliminare questo voto?"))return;s.grades=s.grades.filter(g=>g.id!==gid);save();renderAll();toast("Voto eliminato.")}
+// Un voto eliminato può essere ripristinato entro otto secondi.
+// Il ripristino mantiene ID, valore, data, nota, tipo e peso originali.
+let deletedGradeRecord=null,gradeUndoTimer=null;
+function closeGradeUndo(){
+ clearTimeout(gradeUndoTimer);
+ gradeUndoTimer=null;
+ deletedGradeRecord=null;
+ document.getElementById("gradeUndo").classList.remove("show");
+}
+function showGradeUndo(grade,subjectName){
+ const box=document.getElementById("gradeUndo");
+ document.getElementById("gradeUndoLabel").textContent=`Voto ${gradeLabel(n(grade.value))} eliminato da ${subjectName}`;
+ box.classList.add("show");
+ clearTimeout(gradeUndoTimer);
+ gradeUndoTimer=setTimeout(closeGradeUndo,8000);
+}
+function deleteGrade(sid,gid){
+ const s=data.subjects.find(x=>x.id===sid);
+ if(!s)return;
+ const list=s.grades||[];
+ const index=list.findIndex(g=>g.id===gid);
+ if(index<0)return;
+ if(!confirm("Eliminare questo voto? Puoi annullare entro 8 secondi."))return;
+ const grade=list[index];
+ list.splice(index,1);
+ if(!save()){list.splice(index,0,grade);return}
+ deletedGradeRecord={sid,index,grade};
+ renderAll();
+ if(document.getElementById("subjectDetail").classList.contains("active")&&currentSubjectId===sid)renderSubjectDetail();
+ showGradeUndo(grade,s.name);
+}
+function undoGradeDelete(){
+ const item=deletedGradeRecord;
+ if(!item)return;
+ const s=data.subjects.find(x=>x.id===item.sid);
+ if(!s){closeGradeUndo();toast("Impossibile ripristinare: materia non trovata.");return}
+ const list=s.grades||(s.grades=[]);
+ if(list.some(g=>g.id===item.grade.id)){closeGradeUndo();return}
+ const index=Math.min(item.index,list.length);
+ list.splice(index,0,item.grade);
+ if(!save()){list.splice(index,1);return}
+ closeGradeUndo();
+ renderAll();
+ if(document.getElementById("subjectDetail").classList.contains("active")&&currentSubjectId===item.sid)renderSubjectDetail();
+ toast("Voto ripristinato.");
+}
 function closeModal(id){document.getElementById(id).classList.remove("show")}
 document.querySelectorAll(".modal-wrap").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)m.classList.remove("show")}));
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(window.tt);window.tt=setTimeout(()=>t.classList.remove("show"),2200)}
