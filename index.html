@@ -293,6 +293,30 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{fi
 .grade-chip:focus-visible,.grade-sort:focus-visible,.action:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .action{width:40px;height:40px}
 @media (max-width:360px){.actions .action,.grade-actions .action{width:36px;height:40px}.grade-filter-list{gap:4px}.grade-chip{padding:8px 9px;font-size:10px}}
+
+/* Materie: schede adattive e controlli touch per iPhone */
+#subjects .list{gap:11px}
+.subject-manage{display:block;padding:12px;cursor:default}
+.subject-manage-top{width:100%;display:flex;align-items:center;gap:12px;text-align:left;background:transparent;color:var(--text);padding:3px 2px 12px;min-height:62px}
+.subject-manage .subject-icon{width:45px;height:45px;min-width:45px;border-radius:14px}
+.subject-manage-info{display:block;min-width:0;flex:1}
+.subject-manage-info strong{display:block;font-size:14px;line-height:1.35;font-weight:850;overflow-wrap:anywhere;hyphens:auto}
+.subject-manage-info small{display:block;margin-top:5px;font-size:11px;color:var(--muted)}
+.subject-manage-average{display:flex;flex-direction:column;align-items:flex-end;flex:none;min-width:49px}
+.subject-manage-average strong{font-weight:950;font-size:23px;letter-spacing:-.6px;line-height:1.1}
+.subject-manage-average small{margin-top:4px;font-size:9px;letter-spacing:.6px;color:var(--muted);font-weight:850}
+.subject-manage-actions{border-top:1px solid var(--line);padding-top:10px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.subject-action{min-width:0;min-height:44px;display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 4px;border-radius:11px;font-size:11px;font-weight:850;color:var(--d-text2,#5d6470);background:var(--d-soft,#f2f3f6)}
+.subject-action span{font-size:17px;line-height:1}
+.subject-action.subject-add{background:var(--accentSoft);color:var(--accent)}
+.subject-action.subject-delete{background:var(--d-redsoft,#fff0f1);color:var(--red)}
+.subject-manage-top:focus-visible,.subject-action:focus-visible,.subject-undo button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.subject-undo{position:fixed;left:12px;right:12px;bottom:calc(78px + env(safe-area-inset-bottom));z-index:120;max-width:510px;margin:0 auto;background:var(--d-toast,#17191f);color:white;border-radius:14px;box-shadow:0 10px 34px rgba(0,0,0,.2);padding:10px 12px;display:none;align-items:center;justify-content:space-between;gap:10px;font-size:12px;font-weight:800}
+.subject-undo.show{display:flex}
+.subject-undo span{flex:1;min-width:0;overflow-wrap:anywhere}
+.subject-undo button{background:var(--accent);color:white;border-radius:10px;padding:10px 14px;min-height:40px;font-weight:850;flex:none}
+@media(min-width:700px){.subject-undo{bottom:24px}}
+@media(max-width:360px){.subject-manage{padding:10px}.subject-manage-top{gap:9px}.subject-manage-actions{gap:6px}.subject-action{font-size:10px}}
 </style>
 </head>
 <body>
@@ -526,6 +550,7 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{fi
 </div>
 <div id="onboarding" class="onb" hidden><div class="onb-wrap" id="onbWrap"></div></div>
 <div id="toast" class="toast"></div>
+<div id="subjectUndo" class="subject-undo" role="status" aria-live="polite"><span id="subjectUndoLabel"></span><button type="button" onclick="undoSubjectDelete()">Annulla</button></div>
 
 <script>
 const KEY="schoolflow_mobile_v2";
@@ -751,8 +776,23 @@ function renderHome(){
 function renderSubjects(){
  const q=(document.getElementById("subjectSearch")?.value||"").toLowerCase();
  const list=data.subjects.filter(s=>s.name.toLowerCase().includes(q));
- document.getElementById("subjectList").innerHTML=list.length?list.map(s=>`<div class="manage" onclick="openSubjectDetail('${s.id}',true)"><div class="subject-icon">${s.icon}</div><div class="manage-info"><strong>${esc(s.name)}</strong><small>${(s.grades||[]).length} voti · Media ${sAvg(s)==null?"—":f(sAvg(s))}</small></div><div class="actions"><button class="action" onclick="event.stopPropagation();openGradeModal('${s.id}')">＋</button><button class="action" onclick="event.stopPropagation();openSubjectModal('${s.id}')">✎</button><button class="action delete" onclick="event.stopPropagation();deleteSubject('${s.id}')">×</button></div></div>`).join(""):`<div class="empty"><b>Nessun risultato</b>Prova un altro nome.</div>`;
+ document.getElementById("subjectList").innerHTML=list.length?list.map(s=>{
+  const avg=sAvg(s),count=(s.grades||[]).length;
+  return `<div class="manage subject-manage">
+   <button type="button" class="subject-manage-top" onclick="openSubjectDetail('${s.id}',true)" aria-label="Apri ${esc(s.name)}">
+    <span class="subject-icon" aria-hidden="true">${s.icon}</span>
+    <span class="subject-manage-info"><strong>${esc(s.name)}</strong><small>${count} ${count===1?"voto":"voti"}</small></span>
+    <span class="subject-manage-average"><strong class="${cls(avg)}">${avg==null?"—":f(avg)}</strong><small>MEDIA</small></span>
+   </button>
+   <div class="subject-manage-actions" role="group" aria-label="Azioni per ${esc(s.name)}">
+    <button type="button" class="subject-action subject-add" onclick="openGradeModal('${s.id}')" aria-label="Aggiungi voto a ${esc(s.name)}"><span aria-hidden="true">＋</span> Voto</button>
+    <button type="button" class="subject-action" onclick="openSubjectModal('${s.id}')" aria-label="Modifica ${esc(s.name)}"><span aria-hidden="true">✎</span> Modifica</button>
+    <button type="button" class="subject-action subject-delete" onclick="deleteSubject('${s.id}')" aria-label="Elimina ${esc(s.name)}"><span aria-hidden="true">×</span> Elimina</button>
+   </div>
+  </div>`;
+ }).join(""):`<div class="empty"><b>Nessun risultato</b>Prova un altro nome.</div>`;
 }
+
 function renderAverages(){
  const gs=viewGrades(),a=average(gs);
  document.getElementById("avgGeneral").textContent=a==null?"—":f(a);
@@ -1340,7 +1380,42 @@ function saveSubject(){
  else{data.subjects.push({id:id(),name,icon,grades:[]});toast("Materia aggiunta.");}
  save();closeModal("subjectModal");renderAll();
 }
-function deleteSubject(sid){const s=data.subjects.find(x=>x.id===sid);if(!s)return;if(!confirm(`Eliminare ${s.name} e tutti i suoi voti?`))return;data.subjects=data.subjects.filter(x=>x.id!==sid);save();renderAll();toast("Materia eliminata.")}
+let removedSubjects=[],subjectUndoTimer=null;
+function closeSubjectUndo(){
+ clearTimeout(subjectUndoTimer);
+ removedSubjects=[];
+ document.getElementById("subjectUndo").classList.remove("show");
+}
+function showSubjectUndo(name){
+ const bar=document.getElementById("subjectUndo");
+ document.getElementById("subjectUndoLabel").textContent=`"${name}" eliminata`;
+ bar.classList.add("show");
+ clearTimeout(subjectUndoTimer);
+ subjectUndoTimer=setTimeout(closeSubjectUndo,8000);
+}
+function deleteSubject(sid){
+ const index=data.subjects.findIndex(x=>x.id===sid);
+ if(index<0)return;
+ const subject=data.subjects[index],count=(subject.grades||[]).length;
+ if(!confirm(`Eliminare "${subject.name}" e ${count} ${count===1?"voto":"voti"}?\nPuoi annullare per 8 secondi.`))return;
+ data.subjects.splice(index,1);
+ if(!save()){data.subjects.splice(index,0,subject);return}
+ removedSubjects.push({subject,index});
+ renderAll();
+ showSubjectUndo(subject.name);
+}
+function undoSubjectDelete(){
+ const item=removedSubjects.pop();
+ if(!item)return;
+ if(data.subjects.some(x=>x.id===item.subject.id)){if(removedSubjects.length)showSubjectUndo(removedSubjects[removedSubjects.length-1].subject.name);else closeSubjectUndo();return}
+ const index=Math.min(item.index,data.subjects.length);
+ data.subjects.splice(index,0,item.subject);
+ if(!save()){data.subjects.splice(index,1);removedSubjects.push(item);return}
+ renderAll();
+ if(removedSubjects.length)showSubjectUndo(removedSubjects[removedSubjects.length-1].subject.name);
+ else closeSubjectUndo();
+ toast("Materia ripristinata.");
+}
 function openGradeModal(subjectId=null){
  editingGrade=null;
  // I nuovi voti vanno sempre nel periodo in corso
