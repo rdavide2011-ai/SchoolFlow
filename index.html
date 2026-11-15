@@ -114,19 +114,29 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
 .stat-card .stat-kicker{font-size:9px;color:var(--muted);font-weight:900;letter-spacing:1px}
 .stat-card .stat-title{font-size:13px;font-weight:850;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stat-card .stat-value{font-size:26px;font-weight:950;margin-top:4px}
-.chart-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:15px;box-shadow:var(--shadow);overflow:hidden}
-.chart-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
-.chart-head h2{font-size:16px;margin:0;letter-spacing:-.4px}.chart-head p{font-size:10px;color:var(--muted);margin:4px 0 0}
-.chart-filter{border:1px solid var(--line);background:var(--d-soft,#f7f8fa);border-radius:11px;padding:8px 9px;font-size:10px;max-width:150px}
-.chart-type-btn{background:var(--d-soft,#f7f8fa);color:var(--text);border:1px solid var(--line);border-radius:11px;padding:9px;font-size:11px;font-weight:800;white-space:nowrap}
-.chart-type-menu{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:0 0 12px}.chart-type-menu[hidden]{display:none}
-.chart-type-menu button{background:var(--d-soft,#f7f8fa);color:var(--text);border:1px solid var(--line);border-radius:11px;padding:11px 4px;font-size:11px;font-weight:800}
-.chart-type-menu button:focus-visible{outline:2px solid var(--accent)}
-.chart-mode-info{font-size:10px;color:var(--muted);line-height:1.4;margin:9px 0 0}
-.chart-wrap{width:100%;overflow:hidden}.trend-chart{width:100%;height:270px;display:block}
-.chart-empty{height:270px;display:grid;place-items:center;text-align:center;color:var(--muted);font-size:12px;padding:25px}
+/* Statistiche: layout compatto e grafici ridimensionati secondo il viewport */
+.chart-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:13px;box-shadow:var(--shadow);overflow:hidden}
+.chart-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:9px}
+.chart-heading{min-width:0;flex:1 1 150px}
+.chart-head h2{font-size:16px;margin:0;letter-spacing:-.4px}
+.chart-head p{font-size:10px;color:var(--muted);margin:4px 0 0}
+.chart-select-control{display:flex;align-items:center;gap:5px;flex:none}
+.chart-select-control span{font-size:9px;letter-spacing:.4px;font-weight:900;color:var(--muted)}
+.chart-select-control select{min-height:40px;max-width:145px;border:1px solid var(--line);background:var(--d-soft,#f7f8fa);color:var(--text);border-radius:11px;padding:7px 8px;font-size:16px;font-weight:800}
+.chart-select-control select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.chart-mode-info{font-size:10px;color:var(--muted);line-height:1.4;margin:7px 0 0}
+.chart-wrap{width:100%;overflow:hidden}
+.trend-chart{display:block;width:100%;height:auto;max-height:250px}
+.chart-empty{min-height:170px;display:grid;place-items:center;text-align:center;color:var(--muted);font-size:12px;padding:20px 10px}
 .chart-empty b{display:block;color:var(--text);font-size:14px;margin-bottom:4px}
-.legend{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;max-height:120px;overflow:auto;padding-top:2px}.legend-item{display:flex;align-items:center;gap:5px;font-size:9px;color:var(--d-muted,#656b76);background:var(--d-soft,#f7f7fa);border-radius:9px;padding:5px 7px}.legend-dot{width:8px;height:8px;border-radius:50%;flex:none}
+.legend{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;max-height:90px;overflow:auto;padding-top:2px}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:9px;color:var(--d-muted,#656b76);background:var(--d-soft,#f7f7fa);border-radius:9px;padding:5px 7px}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex:none}
+#statistics .page-head{padding-bottom:12px}
+#statistics .stats-grid{margin-bottom:10px}
+#statistics .stat-card{padding:13px}
+#statistics .section-title{margin-top:19px;margin-bottom:9px}
+@media(max-width:360px){.chart-head{gap:7px}.chart-select-control select{max-width:136px}}
 .ranking{display:grid;gap:8px;margin-top:10px}.rank-row{display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--line);border-radius:15px;padding:11px 12px;box-shadow:var(--shadow)}.rank-num{width:22px;font-size:10px;font-weight:900;color:var(--muted)}.rank-name{flex:1;font-size:12px;font-weight:850;min-width:0}.rank-bar{width:75px;height:6px;background:var(--d-soft,#eef0f4);border-radius:99px;overflow:hidden}.rank-bar i{display:block;height:100%;background:var(--accent);border-radius:99px}.rank-value{width:42px;text-align:right;font-size:13px;font-weight:950}
 .bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--d-nav,rgba(255,255,255,.94));backdrop-filter:blur(20px);border-top:1px solid var(--line);padding:7px 10px calc(7px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(6,1fr)}
 .bottom-nav button{background:none;color:var(--d-muted,#9096a1);border-radius:14px;padding:7px 2px;font-size:9px;font-weight:800}.bottom-nav button.active{background:var(--accentSoft);color:var(--accent)}.bottom-nav .ico{display:block;font-size:20px;line-height:21px;margin-bottom:2px}
@@ -359,17 +369,18 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{fi
   <div class="stat-card"><div class="stat-kicker">SOTTO LA SUFFICIENZA</div><div id="statsBelow" class="stat-value bad">0</div><div class="stat-title">materie</div></div>
  </div>
  <div class="chart-card">
-  <div class="chart-head"><div><h2>Confronto tra materie</h2><p>Tutte le materie nello stesso grafico</p></div><button id="chartModeButton" type="button" class="chart-type-btn" onclick="toggleSfChart()" aria-controls="chartModeMenu">▥ Linee ▾</button></div>
-<div id="chartModeMenu" class="chart-type-menu" hidden>
-<button onclick="setSfChart('line')">📈 Linee</button><button onclick="setSfChart('bar')">▥ Barre</button><button onclick="setSfChart('area')">◩ Area</button>
-<button onclick="setSfChart('pie')">◕ Torta</button><button onclick="setSfChart('donut')">◎ Ciambella</button><button onclick="setSfChart('radar')">◇ Radar</button>
-</div>
+  <div class="chart-head">
+   <div class="chart-heading"><h2>Confronto tra materie</h2><p>Tutte le materie nello stesso grafico</p></div>
+   <label class="chart-select-control" for="chartModeSelect"><span>TIPO</span><select id="chartModeSelect" aria-label="Tipo di grafico" onchange="setSfChart(this.value)">
+    <option value="line">📈 Linee</option><option value="bar">▥ Barre</option><option value="area">◩ Area</option>
+    <option value="pie">◕ Torta</option><option value="donut">◎ Ciambella</option><option value="radar">◇ Radar</option>
+   </select></label>
+  </div>
   <div id="trendChartWrap" class="chart-wrap"></div>
   <div id="trendLegend" class="legend"></div><p id="chartModeInfo" class="chart-mode-info"></p>
  </div>
  <div class="section-title"><h2>Classifica materie</h2><span>media attuale</span></div>
  <div id="statsRanking" class="ranking"></div>
- <div class="info-card" style="margin-top:12px">📈 <b>Come leggerlo:</b> la linea mostra come cambia la media ponderata di ogni materia dopo l'inserimento dei voti. Più è alta, meglio stai andando.</div>
 </section>
 
 <section id="subjectDetail" class="page">
@@ -863,10 +874,10 @@ window.sfChartMode=(()=>{try{const x=localStorage.getItem('schoolflow_chart_mode
 function multiChart(subjects,subs){
  const wrap=document.getElementById('trendChartWrap'),legend=document.getElementById('trendLegend'),mode=window.sfChartMode||'line';
  const names={line:'Linee',bar:'Barre',area:'Area',pie:'Torta',donut:'Ciambella',radar:'Radar'};
- document.getElementById('chartModeButton').textContent='▥ '+names[mode]+' ▾';
+ document.getElementById('chartModeSelect').value=mode;
  document.getElementById('chartModeInfo').textContent=['line','area'].includes(mode)?'Andamento delle medie ponderate di tutte le materie nel tempo.':mode==='bar'||mode==='radar'?'Confronto tra le medie attuali di tutte le materie.':'Percentuale dei voti registrati in ciascuna materia, non delle medie.';
  if(!subjects.length){wrap.innerHTML='<div class="chart-empty"><div><b>Nessun dato ancora</b>Aggiungi i voti per confrontare le materie.</div></div>';legend.innerHTML='';return}
- const W=600,H=270,L=34,R=14,T=17,B=31,iw=W-L-R,ih=H-T-B;
+ const W=420,H=240,L=32,R=12,T=15,B=30,iw=W-L-R,ih=H-T-B;
  const col=s=>chartColor(subs.indexOf(s)),a=s=>sAvg(s),y=v=>T+(10-v)/10*ih;
  let svg=`<svg class="trend-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Confronto materie: ${names[mode]}">`;
  if(mode==='line'||mode==='area'){
@@ -886,17 +897,17 @@ function multiChart(subjects,subs){
   const step=iw/subjects.length,bw=Math.min(44,step*.7);
   subjects.forEach((s,i)=>{const xx=L+i*step+(step-bw)/2,yy=y(a(s));svg+=`<rect x="${xx}" y="${yy}" width="${bw}" height="${y(0)-yy}" rx="3" fill="${col(s)}"><title>${esc(s.name)}: media ${f(a(s))}</title></rect>`;if(subjects.length<=16)svg+=`<text class="ct" x="${xx+bw/2}" y="${Math.max(12,yy-5)}" text-anchor="middle" font-size="10">${f(a(s))}</text>`});
  }else if(mode==='pie'||mode==='donut'){
-  const cx=300,cy=133,r=98,counts=subjects.map(s=>s.grades.length),total=counts.reduce((x,v)=>x+v,0);let start=-Math.PI/2;
+  const cx=W/2,cy=H/2,r=92,counts=subjects.map(s=>s.grades.length),total=counts.reduce((x,v)=>x+v,0);let start=-Math.PI/2;
   subjects.forEach((s,i)=>{
    const share=counts[i]/total,ang=share*Math.PI*2,end=start+ang;
    if(share>0.999999)svg+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${col(s)}"><title>${esc(s.name)}: ${counts[i]} voti</title></circle>`;
    else svg+=`<path d="M${cx},${cy} L${cx+r*Math.cos(start)},${cy+r*Math.sin(start)} A${r},${r} 0 ${ang>Math.PI?1:0} 1 ${cx+r*Math.cos(end)},${cy+r*Math.sin(end)} Z" fill="${col(s)}" stroke="var(--card)" stroke-width="1"><title>${esc(s.name)}: ${counts[i]} voti (${f(share*100)}%)</title></path>`;
    start=end;
   });
-  if(mode==='donut')svg+=`<circle cx="${cx}" cy="${cy}" r="58" fill="var(--card)"/><text x="${cx}" y="${cy+5}" fill="var(--text)" font-weight="bold" font-size="16" text-anchor="middle">${total} voti</text>`;
+  if(mode==='donut')svg+=`<circle cx="${cx}" cy="${cy}" r="54" fill="var(--card)"/><text x="${cx}" y="${cy+5}" fill="var(--text)" font-weight="bold" font-size="16" text-anchor="middle">${total} voti</text>`;
  }else{
   if(subjects.length<3){wrap.innerHTML='<div class="chart-empty"><div><b>Radar: servono almeno 3 materie</b>Scegli Barre per confrontarne una o due.</div></div>';legend.innerHTML='';return}
-  const n=subjects.length,cx=300,cy=135,r=99;
+  const n=subjects.length,cx=W/2,cy=H/2,r=94;
   const p=(i,v)=>[cx+r*v/10*Math.cos(-Math.PI/2+i*2*Math.PI/n),cy+r*v/10*Math.sin(-Math.PI/2+i*2*Math.PI/n)];
   [2,4,6,8,10].forEach(v=>svg+=`<polygon points="${subjects.map((_,i)=>p(i,v).join(',')).join(' ')}" fill="none" stroke="currentColor" stroke-opacity=".14"/>`);
   svg+=`<polygon points="${subjects.map((s,i)=>p(i,a(s)).join(',')).join(' ')}" fill="#6c4df6" fill-opacity=".24" stroke="#6c4df6" stroke-width="2.5"/>`;
@@ -909,9 +920,8 @@ function setSfChart(mode){
  if(!['line','bar','area','pie','donut','radar'].includes(mode))return;
  window.sfChartMode=mode;
  try{localStorage.setItem('schoolflow_chart_mode',mode)}catch(e){}
- document.getElementById('chartModeMenu').hidden=true;renderStatistics();
+ renderStatistics();
 }
-function toggleSfChart(){const m=document.getElementById('chartModeMenu');m.hidden=!m.hidden}
 function renderStatistics(){
  const subs=viewSubjects();
  const subjectsWithGrades=subs.filter(s=>(s.grades||[]).length);
