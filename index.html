@@ -264,6 +264,17 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{fi
 .theme-seg button .e{font-size:19px}
 .theme-seg button.on{background:var(--accentSoft);color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent)}
 .theme-note{font-size:11px;color:var(--muted);margin:8px 4px 16px}
+
+/* Migliorie iPhone: filtri e ordinamento del registro, senza modificare i dati */
+.grade-tools{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:0 0 3px}
+.grade-filter-list{display:flex;flex:1 1 auto;flex-wrap:wrap;gap:6px}
+.grade-chip{border:1px solid var(--line);border-radius:999px;padding:9px 11px;background:var(--card);color:var(--muted);font-size:11px;font-weight:800;white-space:nowrap;min-height:40px}
+.grade-chip.active{background:var(--accentSoft);color:var(--accent);border-color:var(--d-accline,#d1c9f9)}
+.grade-sort{min-height:40px;max-width:135px;padding:8px 9px;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:11px;font-size:11px;font-weight:800}
+.grade-count{margin:6px 2px 12px;color:var(--muted);font-size:11px}
+.grade-chip:focus-visible,.grade-sort:focus-visible,.action:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.action{width:40px;height:40px}
+@media (max-width:360px){.actions .action,.grade-actions .action{width:36px;height:40px}.grade-filter-list{gap:4px}.grade-chip{padding:8px 9px;font-size:10px}}
 </style>
 </head>
 <body>
@@ -367,7 +378,19 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{fi
 
 <section id="grades" class="page">
  <div class="page-head"><div class="eyebrow">REGISTRO</div><h1>Tutti i voti</h1><p>Il tuo storico completo delle valutazioni. Tocca ✎ per modificare un voto.</p></div>
- <div class="search-row"><input id="gradeSearch" class="search" placeholder="Cerca..." oninput="renderGrades()"><button class="add-btn" onclick="openGradeModal()">＋</button></div>
+ <div class="search-row"><input id="gradeSearch" class="search" placeholder="Cerca..." aria-label="Cerca voti per materia, tipologia o nota" oninput="renderGrades()"><button class="add-btn" aria-label="Aggiungi voto" onclick="openGradeModal()">＋</button></div>
+ <div class="grade-tools">
+  <div class="grade-filter-list" role="group" aria-label="Filtra i voti">
+   <button type="button" class="grade-chip active" data-grade-filter="all" aria-pressed="true" onclick="setGradeFilter('all')">Tutti</button>
+   <button type="button" class="grade-chip" data-grade-filter="low" aria-pressed="false" onclick="setGradeFilter('low')">Sotto il 6</button>
+   <button type="button" class="grade-chip" data-grade-filter="ok" aria-pressed="false" onclick="setGradeFilter('ok')">Dal 6 in su</button>
+  </div>
+  <select id="gradeSort" class="grade-sort" aria-label="Ordine dei voti" onchange="renderGrades()">
+   <option value="newest">Più recenti</option>
+   <option value="oldest">Meno recenti</option>
+  </select>
+ </div>
+ <p id="gradeCount" class="grade-count" aria-live="polite"></p>
  <div id="gradeList" class="list"></div>
 </section>
 
@@ -677,11 +700,32 @@ function renderAverages(){
  document.getElementById("avgTotal").textContent=gs.length;
  document.getElementById("averageList").innerHTML=viewSubjects().map(s=>{const a=sAvg(s),c=(s.grades||[]).length;return `<div class="avg-card"><div class="avg-head"><strong>${s.icon} ${esc(s.name)}</strong><b class="${cls(a)}">${a==null?"—":f(a)}</b></div><div class="avg-meta"><span>${c} ${c===1?"voto":"voti"}</span><span>media ponderata</span></div><div class="progress"><i style="width:${a==null?0:a*10}%"></i></div></div>`}).join("");
 }
+let gradeFilter="all";
+function setGradeFilter(filter){
+ gradeFilter=["all","low","ok"].includes(filter)?filter:"all";
+ document.querySelectorAll("[data-grade-filter]").forEach(b=>{
+  const active=b.dataset.gradeFilter===gradeFilter;
+  b.classList.toggle("active",active);
+  b.setAttribute("aria-pressed",String(active));
+ });
+ renderGrades();
+}
 function renderGrades(){
- const q=(document.getElementById("gradeSearch")?.value||"").toLowerCase();
+ const q=(document.getElementById("gradeSearch")?.value||"").trim().toLowerCase();
  const ro=isArchiveView();
- const gs=viewGrades().filter(g=>`${g.subject} ${g.type} ${g.note||""}`.toLowerCase().includes(q)).sort((a,b)=>new Date(b.date)-new Date(a.date));
- document.getElementById("gradeList").innerHTML=gs.length?gs.map(g=>{const d=g.date?new Date(g.date+"T12:00:00").toLocaleDateString("it-IT"):"—";return `<div class="grade-card"><div class="subject-icon">${g.icon}</div><div><div class="grade-subject">${esc(g.subject)}</div><div class="grade-details">${esc(g.type)} · ${d}${g.note?" · "+esc(g.note):""}</div></div><div class="grade-right"><div class="grade-value ${cls(n(g.value))}">${gradeLabel(n(g.value))}</div><div class="weight">${f(n(g.weight,100))}% peso</div></div>${ro?"":`<div class="grade-actions"><button class="action" aria-label="Modifica voto" onclick="editGrade('${g.subjectId}','${g.id}')">✎</button><button class="action delete" aria-label="Elimina voto" onclick="deleteGrade('${g.subjectId}','${g.id}')">×</button></div>`}</div>`}).join(""):`<div class="empty"><b>Nessun voto</b>Quando inserirai un voto apparirà qui.</div>`;
+ const order=document.getElementById("gradeSort")?.value||"newest";
+ const gs=viewGrades().filter(g=>{
+  if(!`${g.subject} ${g.type} ${g.note||""}`.toLowerCase().includes(q))return false;
+  if(gradeFilter==="low")return n(g.value)<6;
+  if(gradeFilter==="ok")return n(g.value)>=6;
+  return true;
+ }).sort((a,b)=>{
+  const da=new Date(a.date||"1970-01-01"),db=new Date(b.date||"1970-01-01");
+  return order==="oldest"?da-db:db-da;
+ });
+ const counter=document.getElementById("gradeCount");
+ if(counter)counter.textContent=`${gs.length} ${gs.length===1?"voto visualizzato":"voti visualizzati"}`;
+ document.getElementById("gradeList").innerHTML=gs.length?gs.map(g=>{const d=g.date?new Date(g.date+"T12:00:00").toLocaleDateString("it-IT"):"—";return `<div class="grade-card"><div class="subject-icon">${g.icon}</div><div><div class="grade-subject">${esc(g.subject)}</div><div class="grade-details">${esc(g.type)} · ${d}${g.note?" · "+esc(g.note):""}</div></div><div class="grade-right"><div class="grade-value ${cls(n(g.value))}">${gradeLabel(n(g.value))}</div><div class="weight">${f(n(g.weight,100))}% peso</div></div>${ro?"":`<div class="grade-actions"><button class="action" aria-label="Modifica voto" onclick="editGrade('${g.subjectId}','${g.id}')">✎</button><button class="action delete" aria-label="Elimina voto" onclick="deleteGrade('${g.subjectId}','${g.id}')">×</button></div>`}</div>`}).join(""):viewGrades().length?`<div class="empty"><b>Nessun risultato</b>Prova un altro filtro o termine di ricerca.</div>`:`<div class="empty"><b>Nessun voto</b>Quando inserirai un voto apparirà qui.</div>`;
 }
 
 let currentSubjectId=null;
