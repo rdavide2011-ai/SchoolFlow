@@ -50,7 +50,7 @@ jobs:
           EOF
           cat > capacitor.config.json <<'EOF'
           {
-            "appId": "com.schoolflow.app",
+            "appId": "com.rivapps.schoolflow",
             "appName": "SchoolFlow",
             "webDir": "www",
             "server": {
@@ -66,7 +66,7 @@ jobs:
           from pathlib import Path
           path=Path("android/app/build.gradle")
           old=path.read_text()
-          new,n=re.subn(r'\bversionCode\s+\d+', 'versionCode 20261115', old, count=1)
+          new,n=re.subn(r'\bversionCode\s+\d+', 'versionCode 8', old, count=1)
           if n!=1: raise SystemExit("Could not assign Android versionCode")
           new,n=re.subn(r'\bversionName\s+["\x27][^"\x27]+["\x27]', 'versionName "1.1.0"', new, count=1)
           if n!=1: raise SystemExit("Could not assign Android versionName")
@@ -111,12 +111,12 @@ jobs:
           }
           console.log('OK JavaScript syntax');
           NODE
-          grep -q '"appId": "com.schoolflow.app"' capacitor.config.json
+          grep -q '"appId": "com.rivapps.schoolflow"' capacitor.config.json
           grep -q '"androidScheme": "https"' capacitor.config.json
-          grep -q 'versionCode 20261115' android/app/build.gradle
+          grep -q 'versionCode 8' android/app/build.gradle
       - name: Build Android AAB and debug APK
         run: cd android && ./gradlew --no-daemon :app:bundleRelease :app:assembleDebug
-      - name: Sign only when the ORIGINAL Play upload key is configured
+      - name: Sign only when the Play-approved upload key is configured
         env:
           SF_KEYSTORE_B64: ${{ secrets.SCHOOLFLOW_UPLOAD_KEYSTORE_BASE64 }}
           SF_KEYSTORE_PASSWORD: ${{ secrets.SCHOOLFLOW_UPLOAD_KEYSTORE_PASSWORD }}
@@ -130,9 +130,9 @@ jobs:
             jarsigner -keystore "$RUNNER_TEMP/schoolflow-upload.jks" -storepass:env SF_KEYSTORE_PASSWORD -keypass:env SF_KEY_PASSWORD -sigalg SHA256withRSA -digestalg SHA-256 "$AAB" "$SF_KEY_ALIAS"
             jarsigner -verify "$AAB"
             rm -f "$RUNNER_TEMP/schoolflow-upload.jks"
-            echo "Signed with provided original upload key" > android/aab-signing-status.txt
+            echo "Signed with provided Play upload key" > android/aab-signing-status.txt
           else
-            echo "UNSIGNED: original Play upload signing key was not configured" > android/aab-signing-status.txt
+            echo "UNSIGNED: Play upload signing key was not configured" > android/aab-signing-status.txt
           fi
       - name: Verify Android bundle, package, and embedded web app
         shell: bash
