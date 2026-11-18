@@ -26,9 +26,9 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Install Android SDK API 35
+      - name: Install Android SDK API 36
         run: |
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-35" "build-tools;35.0.0"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-36" "build-tools;36.0.0"
       - name: Create Capacitor 7 project from approved web sources
         shell: bash
         run: |
@@ -66,7 +66,7 @@ jobs:
           from pathlib import Path
           path=Path("android/app/build.gradle")
           old=path.read_text()
-          new,n=re.subn(r'\bversionCode\s+\d+', 'versionCode 8', old, count=1)
+          new,n=re.subn(r'\bversionCode\s+\d+', 'versionCode 9', old, count=1)
           if n!=1: raise SystemExit("Could not assign Android versionCode")
           new,n=re.subn(r'\bversionName\s+["\x27][^"\x27]+["\x27]', 'versionName "1.1.0"', new, count=1)
           if n!=1: raise SystemExit("Could not assign Android versionName")
@@ -78,6 +78,12 @@ jobs:
           variables_after,min_n=re.subn(r'(?m)^(\s*minSdkVersion\s*=\s*)\d+', r'\g<1>24', variables_before, count=1)
           if min_n!=1: raise SystemExit("Could not assign Android minSdkVersion in variables.gradle")
           variables.write_text(variables_after)
+          # Google Play requires targeting Android API 36 for this app.
+          sdk_variables=variables.read_text()
+          for key in ("compileSdkVersion", "targetSdkVersion"):
+              sdk_variables,count=re.subn(r'(?m)^(\s*'+key+r'\s*=\s*)\d+', r'\g<1>36', sdk_variables, count=1)
+              if count!=1: raise SystemExit("Could not set "+key+" to 36")
+          variables.write_text(sdk_variables)
           # Keep the original SchoolFlow logo as the launcher icon.
           res=Path("android/app/src/main/res")
           source=Path("SchoolFlow-logo.png")
@@ -120,8 +126,10 @@ jobs:
           NODE
           grep -q '"appId": "com.rivapps.schoolflow"' capacitor.config.json
           grep -q '"androidScheme": "https"' capacitor.config.json
-          grep -q 'versionCode 8' android/app/build.gradle
+          grep -q 'versionCode 9' android/app/build.gradle
           grep -Eq 'minSdkVersion[[:space:]]*=[[:space:]]*24' android/variables.gradle
+          grep -Eq 'compileSdkVersion[[:space:]]*=[[:space:]]*36' android/variables.gradle
+          grep -Eq 'targetSdkVersion[[:space:]]*=[[:space:]]*36' android/variables.gradle
       - name: Build Android AAB and debug APK
         run: cd android && ./gradlew --no-daemon :app:bundleRelease :app:assembleDebug
       - name: Sign only when the Play-approved upload key is configured
@@ -152,11 +160,12 @@ jobs:
           sha256sum index.html /tmp/schoolflow-bundle-index.html
           cat android/aab-signing-status.txt
           # Inspect compiled APK manifest, not just the source Gradle text.
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging android/app/build/outputs/apk/debug/app-debug.apk > /tmp/schoolflow-aapt.txt
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging android/app/build/outputs/apk/debug/app-debug.apk > /tmp/schoolflow-aapt.txt
           grep -E "^package:|^sdkVersion:|^targetSdkVersion:" /tmp/schoolflow-aapt.txt
           grep -q "name='com.rivapps.schoolflow'" /tmp/schoolflow-aapt.txt
-          grep -q "versionCode='8'" /tmp/schoolflow-aapt.txt
+          grep -q "versionCode='9'" /tmp/schoolflow-aapt.txt
           grep -q "sdkVersion:'24'" /tmp/schoolflow-aapt.txt
+          grep -q "targetSdkVersion:'36'" /tmp/schoolflow-aapt.txt
       - uses: actions/upload-artifact@v4
         with:
           name: SchoolFlow-Capacitor-AAB
