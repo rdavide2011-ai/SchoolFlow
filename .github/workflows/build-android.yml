@@ -71,6 +71,13 @@ jobs:
           new,n=re.subn(r'\bversionName\s+["\x27][^"\x27]+["\x27]', 'versionName "1.1.0"', new, count=1)
           if n!=1: raise SystemExit("Could not assign Android versionName")
           path.write_text(new)
+          # Capacitor 7 defaults to minSdkVersion 23. Google Play's automatic
+          # protection requires 24 or higher, so update Gradle's source value.
+          variables=Path("android/variables.gradle")
+          variables_before=variables.read_text()
+          variables_after,min_n=re.subn(r'(?m)^(\s*minSdkVersion\s*=\s*)\d+', r'\g<1>24', variables_before, count=1)
+          if min_n!=1: raise SystemExit("Could not assign Android minSdkVersion in variables.gradle")
+          variables.write_text(variables_after)
           # Keep the original SchoolFlow logo as the launcher icon.
           res=Path("android/app/src/main/res")
           source=Path("SchoolFlow-logo.png")
@@ -114,6 +121,7 @@ jobs:
           grep -q '"appId": "com.rivapps.schoolflow"' capacitor.config.json
           grep -q '"androidScheme": "https"' capacitor.config.json
           grep -q 'versionCode 8' android/app/build.gradle
+          grep -Eq 'minSdkVersion[[:space:]]*=[[:space:]]*24' android/variables.gradle
       - name: Build Android AAB and debug APK
         run: cd android && ./gradlew --no-daemon :app:bundleRelease :app:assembleDebug
       - name: Sign only when the Play-approved upload key is configured
@@ -143,6 +151,12 @@ jobs:
           cmp index.html /tmp/schoolflow-bundle-index.html
           sha256sum index.html /tmp/schoolflow-bundle-index.html
           cat android/aab-signing-status.txt
+          # Inspect compiled APK manifest, not just the source Gradle text.
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging android/app/build/outputs/apk/debug/app-debug.apk > /tmp/schoolflow-aapt.txt
+          grep -E "^package:|^sdkVersion:|^targetSdkVersion:" /tmp/schoolflow-aapt.txt
+          grep -q "name='com.rivapps.schoolflow'" /tmp/schoolflow-aapt.txt
+          grep -q "versionCode='8'" /tmp/schoolflow-aapt.txt
+          grep -q "sdkVersion:'24'" /tmp/schoolflow-aapt.txt
       - uses: actions/upload-artifact@v4
         with:
           name: SchoolFlow-Capacitor-AAB
