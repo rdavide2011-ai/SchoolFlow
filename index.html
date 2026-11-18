@@ -553,11 +553,87 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{fi
 </div>
 <div id="onboarding" class="onb" hidden><div class="onb-wrap" id="onbWrap"></div></div>
 <div id="toast" class="toast"></div>
+<div id="storageRescue" hidden role="alertdialog" aria-modal="true" style="position:fixed;inset:0;z-index:950;background:var(--bg);color:var(--text);padding:35px 20px;overflow:auto">
+ <div style="max-width:470px;margin:12vh auto 0;background:var(--card);padding:25px;border:2px solid var(--red);border-radius:18px">
+  <h2>⚠️ Dati SchoolFlow da proteggere</h2>
+  <p id="storageRescueReason">Archivio non disponibile.</p>
+  <p>Non verrà creato un registro vuoto sopra quello esistente. Puoi salvare il contenuto originale e importare un backup SchoolFlow.</p>
+  <button class="backup-btn primary" onclick="downloadDamagedData()">Scarica dati grezzi</button>
+  <button class="backup-btn" onclick="document.getElementById('importFile').click()">Importa backup</button>
+ </div>
+</div>
 <div id="subjectUndo" class="subject-undo" role="status" aria-live="polite"><span id="subjectUndoLabel"></span><button type="button" onclick="undoSubjectDelete()">Annulla</button></div>
 <div id="gradeUndo" class="subject-undo grade-undo" role="status" aria-live="polite"><span id="gradeUndoLabel"></span><button type="button" onclick="undoGradeDelete()">Annulla</button></div>
 
 <script>
 const KEY="schoolflow_mobile_v2";
+// IMPORTANTE: la chiave storica non cambia, altrimenti i voti esistenti diventano invisibili.
+const SHADOW_KEY=KEY+"_mirror";
+const NATIVE_KEY=KEY+"_native_v1";
+let storageProblem=false,storageIssue="",storageWasFound=false;
+let nativeWriteQueue=Promise.resolve(),nativeSaveFailure=false;
+function parseStoredState(raw){
+ if(!raw)return null;
+ try{
+  const x=JSON.parse(raw);
+  if(!x||typeof x!=="object"||!Array.isArray(x.subjects)||x.subjects.some(v=>!v||typeof v!=="object"))return null;
+  x.settings=Object.assign(defaultSettings(),x.settings||{});
+  x.history=Array.isArray(x.history)?x.history:[];
+  x.subjects.forEach(v=>{v.grades=Array.isArray(v.grades)?v.grades:[]});
+  x._storageRevision=Number.isSafeInteger(x._storageRevision)&&x._storageRevision>=0?x._storageRevision:0;
+  return x;
+ }catch(e){return null}
+}
+function getNativePreferences(){
+ try{
+  const cap=window.Capacitor;
+  return cap&&typeof cap.isNativePlatform==="function"&&cap.isNativePlatform()&&cap.Plugins&&cap.Plugins.Preferences||null;
+ }catch(e){return null}
+}
+function queueNativeSave(payload){
+ const prefs=getNativePreferences();
+ if(!prefs)return;
+ // Le chiamate native sono serializzate: una scrittura vecchia non deve vincere su una nuova.
+ nativeWriteQueue=nativeWriteQueue.catch(()=>{}).then(()=>prefs.set({key:NATIVE_KEY,value:payload})).then(()=>{nativeSaveFailure=false}).catch(e=>{
+  nativeSaveFailure=true;
+  console.warn("SchoolFlow: backup nativo non riuscito",e);
+ });
+}
+async function recoverStorageBeforeStart(){
+ const prefs=getNativePreferences();
+ if(prefs){
+  try{
+   const result=await prefs.get({key:NATIVE_KEY});
+   const nativeState=parseStoredState(result&&result.value);
+   if(nativeState){
+    const localRevision=storageWasFound?(data._storageRevision||0):-1;
+    if(storageProblem||nativeState._storageRevision>localRevision){
+     data=nativeState;storageProblem=false;storageIssue="";storageWasFound=true;
+     try{
+      const serialized=JSON.stringify(data);
+      localStorage.setItem(KEY,serialized);
+      try{localStorage.setItem(SHADOW_KEY,serialized)}catch(e){}
+     }catch(e){console.warn("SchoolFlow: ripristinato da Android, ma localStorage non disponibile",e)}
+    }else if(!storageProblem){queueNativeSave(JSON.stringify(data))}
+   }else if(storageWasFound&&!storageProblem){queueNativeSave(JSON.stringify(data))}
+  }catch(e){console.warn("SchoolFlow: archivio Android non disponibile",e)}
+ }
+ if(storageProblem){
+  document.getElementById("storageRescue").hidden=false;
+  document.getElementById("storageRescueReason").textContent=storageIssue||"I dati salvati non sono leggibili.";
+  runSplash();return;
+ }
+ // Il controllo dei periodi va effettuato solo DOPO il recupero, mai su una banca dati vuota.
+ checkAutomaticPeriod();renderAll();
+ if(!storageWasFound)openOnboarding();
+ runSplash();
+}
+function downloadDamagedData(){
+ try{
+  const raw=localStorage.getItem(KEY)||localStorage.getItem(SHADOW_KEY);
+  if(raw)downloadFile(raw,"SchoolFlow-dati-da-recuperare-"+todayISO()+".txt");
+ }catch(e){alert("Impossibile leggere i dati grezzi su questo dispositivo.")}
+}
 const DEFAULT=[
  {id:"mat",name:"MATE",icon:"➗",grades:[]},
  {id:"scifis",name:"SCI-FIS",icon:"🧪",grades:[]},
@@ -607,22 +683,41 @@ function getPeriodEnds(s){
 }
 function load(){
  try{
-  const x=JSON.parse(localStorage.getItem(KEY));
-  if(x&&Array.isArray(x.subjects)){
-   x.settings=Object.assign(defaultSettings(),x.settings||{});
-   x.history=Array.isArray(x.history)?x.history:[];
-   x.subjects.forEach(s=>{s.grades=Array.isArray(s.grades)?s.grades:[]});
-   return x;
+  const primaryRaw=localStorage.getItem(KEY);
+  const mirrorRaw=localStorage.getItem(SHADOW_KEY);
+  const primary=parseStoredState(primaryRaw),mirror=parseStoredState(mirrorRaw);
+  if(primary||mirror){
+   storageWasFound=true;
+   const selected=mirror&&(!primary||mirror._storageRevision>primary._storageRevision)?mirror:primary;
+   // Mai sostituire un voto cancellato con un backup vecchio: si usa la revisione più recente.
+   if(selected===mirror){
+    try{localStorage.setItem(KEY,JSON.stringify(mirror))}catch(e){}
+   }
+   return selected;
   }
- }catch(e){
-  // Dati illeggibili: ne salvo una copia di sicurezza prima che vengano sovrascritti
-  try{const raw=localStorage.getItem(KEY);if(raw)localStorage.setItem(KEY+"_backup_"+Date.now(),raw)}catch(_){}
- }
- return{subjects:JSON.parse(JSON.stringify(DEFAULT)),settings:defaultSettings(),history:[]};
+  if(primaryRaw||mirrorRaw){
+   storageProblem=true;storageIssue="I dati presenti risultano danneggiati: non verranno sovrascritti.";
+   try{localStorage.setItem(KEY+"_corrupt_"+Date.now(),primaryRaw||mirrorRaw)}catch(e){}
+  }
+ }catch(e){storageProblem=true;storageIssue="Memoria locale non accessibile: i salvataggi sono bloccati."}
+ return{subjects:JSON.parse(JSON.stringify(DEFAULT)),settings:defaultSettings(),history:[],_storageRevision:0};
 }
 function save(){
- try{localStorage.setItem(KEY,JSON.stringify(data));return true}
- catch(e){toast("Errore: impossibile salvare sul dispositivo.");return false}
+ if(storageProblem){toast("Archivio protetto: recupera prima i dati.");return false}
+ const oldRevision=data._storageRevision||0;
+ try{
+  data._storageRevision=oldRevision+1;
+  const payload=JSON.stringify(data);
+  localStorage.setItem(KEY,payload);
+  try{localStorage.setItem(SHADOW_KEY,payload)}catch(e){console.warn("SchoolFlow: mirror non aggiornato",e)}
+  storageWasFound=true;
+  queueNativeSave(payload);
+  return true;
+ }catch(e){
+  data._storageRevision=oldRevision;
+  toast("Errore: impossibile salvare sul dispositivo.");
+  return false;
+ }
 }
 function parseNum(v){const t=String(v??"").trim().replace(",",".");return t===""?NaN:Number(t)}
 function todayISO(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
@@ -630,7 +725,8 @@ function periodLabel(p){
  const cfg=periodConfig((data.settings||defaultSettings()).periodType);
  return cfg.names[p-1]||cfg.names[cfg.names.length-1];
 }
-function archiveCurrentPeriod(){
+function archiveCurrentPeriod(persist=true){
+ const previous=JSON.parse(JSON.stringify(data));
  const s=data.settings||defaultSettings(),cfg=periodConfig(s.periodType);
  const period=s.currentPeriod||1;
  const name=cfg.names[period-1];
@@ -656,9 +752,10 @@ function archiveCurrentPeriod(){
    subjects:JSON.parse(JSON.stringify(data.subjects))
   });
  }
+ // I voti non vengono cancellati: vengono trasferiti nello storico.
  data.subjects.forEach(sub=>sub.grades=[]);
  s.currentPeriod=period+1;
- save();
+ if(persist&&!save()){data=previous;return false}
  return true;
 }
 function periodsToArchive(s){
@@ -682,7 +779,7 @@ function checkAutomaticPeriod(){
   if(!archiveCurrentPeriod())break;
   changed=true;archived.push(name);
  }
- if(changed){save();setTimeout(()=>afterSplash(()=>toast(`Archiviato: ${archived.join(", ")}`)),300)}
+ if(changed){setTimeout(()=>afterSplash(()=>toast(`Archiviato: ${archived.join(", ")}`)),300)}
  return changed;
 }
 function id(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
@@ -740,7 +837,7 @@ function showPage(page,button){
 }
 function subjectCard(s){
  const a=sAvg(s),count=(s.grades||[]).length;
- return `<div class="subject" onclick="openSubjectDetail('${s.id}')"><div class="subject-icon">${s.icon}</div><div class="subject-main"><div class="subject-name">${esc(s.name)}</div><div class="subject-count">${count} ${count===1?"voto":"voti"}</div><div class="progress"><i style="width:${a==null?0:Math.max(0,Math.min(100,a*10))}%"></i></div></div><div class="subject-score"><strong class="${cls(a)}">${a==null?"—":f(a)}</strong><small>media</small></div></div>`
+ return `<div class="subject" onclick="openSubjectDetail('${s.id}')"><div class="subject-icon">${esc(s.icon)}</div><div class="subject-main"><div class="subject-name">${esc(s.name)}</div><div class="subject-count">${count} ${count===1?"voto":"voti"}</div><div class="progress"><i style="width:${a==null?0:Math.max(0,Math.min(100,a*10))}%"></i></div></div><div class="subject-score"><strong class="${cls(a)}">${a==null?"—":f(a)}</strong><small>media</small></div></div>`
 }
 let homeSubjectFilter="all";
 function setHomeSubjectFilter(filter){
@@ -784,7 +881,7 @@ function renderSubjects(){
   const avg=sAvg(s),count=(s.grades||[]).length;
   return `<div class="manage subject-manage">
    <button type="button" class="subject-manage-top" onclick="openSubjectDetail('${s.id}',true)" aria-label="Apri ${esc(s.name)}">
-    <span class="subject-icon" aria-hidden="true">${s.icon}</span>
+    <span class="subject-icon" aria-hidden="true">${esc(s.icon)}</span>
     <span class="subject-manage-info"><strong>${esc(s.name)}</strong><small>${count} ${count===1?"voto":"voti"}</small></span>
     <span class="subject-manage-average"><strong class="${cls(avg)}">${avg==null?"—":f(avg)}</strong><small>MEDIA</small></span>
    </button>
@@ -801,7 +898,7 @@ function renderAverages(){
  const gs=viewGrades(),a=average(gs);
  document.getElementById("avgGeneral").textContent=a==null?"—":f(a);
  document.getElementById("avgTotal").textContent=gs.length;
- document.getElementById("averageList").innerHTML=viewSubjects().map(s=>{const a=sAvg(s),c=(s.grades||[]).length;return `<div class="avg-card"><div class="avg-head"><strong>${s.icon} ${esc(s.name)}</strong><b class="${cls(a)}">${a==null?"—":f(a)}</b></div><div class="avg-meta"><span>${c} ${c===1?"voto":"voti"}</span><span>media ponderata</span></div><div class="progress"><i style="width:${a==null?0:a*10}%"></i></div></div>`}).join("");
+ document.getElementById("averageList").innerHTML=viewSubjects().map(s=>{const a=sAvg(s),c=(s.grades||[]).length;return `<div class="avg-card"><div class="avg-head"><strong>${esc(s.icon)} ${esc(s.name)}</strong><b class="${cls(a)}">${a==null?"—":f(a)}</b></div><div class="avg-meta"><span>${c} ${c===1?"voto":"voti"}</span><span>media ponderata</span></div><div class="progress"><i style="width:${a==null?0:a*10}%"></i></div></div>`}).join("");
 }
 let gradeFilter="all";
 function setGradeFilter(filter){
@@ -828,7 +925,7 @@ function renderGrades(){
  });
  const counter=document.getElementById("gradeCount");
  if(counter)counter.textContent=`${gs.length} ${gs.length===1?"voto visualizzato":"voti visualizzati"}`;
- document.getElementById("gradeList").innerHTML=gs.length?gs.map(g=>{const d=g.date?new Date(g.date+"T12:00:00").toLocaleDateString("it-IT"):"—";return `<div class="grade-card"><div class="subject-icon">${g.icon}</div><div><div class="grade-subject">${esc(g.subject)}</div><div class="grade-details">${esc(g.type)} · ${d}${g.note?" · "+esc(g.note):""}</div></div><div class="grade-right"><div class="grade-value ${cls(n(g.value))}">${gradeLabel(n(g.value))}</div><div class="weight">${f(n(g.weight,100))}% peso</div></div>${ro?"":`<div class="grade-actions"><button class="action" aria-label="Modifica voto" onclick="editGrade('${g.subjectId}','${g.id}')">✎</button><button class="action delete" aria-label="Elimina voto" onclick="deleteGrade('${g.subjectId}','${g.id}')">×</button></div>`}</div>`}).join(""):viewGrades().length?`<div class="empty"><b>Nessun risultato</b>Prova un altro filtro o termine di ricerca.</div>`:`<div class="empty"><b>Nessun voto</b>Quando inserirai un voto apparirà qui.</div>`;
+ document.getElementById("gradeList").innerHTML=gs.length?gs.map(g=>{const d=g.date?new Date(g.date+"T12:00:00").toLocaleDateString("it-IT"):"—";return `<div class="grade-card"><div class="subject-icon">${esc(g.icon)}</div><div><div class="grade-subject">${esc(g.subject)}</div><div class="grade-details">${esc(g.type)} · ${d}${g.note?" · "+esc(g.note):""}</div></div><div class="grade-right"><div class="grade-value ${cls(n(g.value))}">${gradeLabel(n(g.value))}</div><div class="weight">${f(n(g.weight,100))}% peso</div></div>${ro?"":`<div class="grade-actions"><button class="action" aria-label="Modifica voto" onclick="editGrade('${g.subjectId}','${g.id}')">✎</button><button class="action delete" aria-label="Elimina voto" onclick="deleteGrade('${g.subjectId}','${g.id}')">×</button></div>`}</div>`}).join(""):viewGrades().length?`<div class="empty"><b>Nessun risultato</b>Prova un altro filtro o termine di ricerca.</div>`:`<div class="empty"><b>Nessun voto</b>Quando inserirai un voto apparirà qui.</div>`;
 }
 
 let currentSubjectId=null;
@@ -977,7 +1074,7 @@ function renderStatistics(){
  const below=ranked.filter(x=>x.a<6).length,bl=document.getElementById('statsBelow');
  bl.textContent=below;bl.className='stat-value '+(below?'bad':'good');
  multiChart(subjectsWithGrades,subs);
- document.getElementById('statsRanking').innerHTML=ranked.length?ranked.map((x,i)=>`<div class="rank-row"><div class="rank-num">${i+1}</div><div class="rank-name">${x.s.icon} ${esc(x.s.name)}</div><div class="rank-bar"><i style="width:${Math.max(0,Math.min(100,x.a*10))}%"></i></div><div class="rank-value ${cls(x.a)}">${f(x.a)}</div></div>`).join(''):`<div class="empty"><b>Nessuna materia con voti</b>Inserisci i primi voti per creare le statistiche.</div>`;
+ document.getElementById('statsRanking').innerHTML=ranked.length?ranked.map((x,i)=>`<div class="rank-row"><div class="rank-num">${i+1}</div><div class="rank-name">${esc(x.s.icon)} ${esc(x.s.name)}</div><div class="rank-bar"><i style="width:${Math.max(0,Math.min(100,x.a*10))}%"></i></div><div class="rank-value ${cls(x.a)}">${f(x.a)}</div></div>`).join(''):`<div class="empty"><b>Nessuna materia con voti</b>Inserisci i primi voti per creare le statistiche.</div>`;
 }
 function renderSettings(){
  const s=data.settings||defaultSettings(),cfg=periodConfig(s.periodType);
@@ -1023,7 +1120,10 @@ function saveSettings(){
  if(toArchive.length&&current&&!confirm(`Con queste date verrà chiuso subito: ${toArchive.join(", ")}.\n\nI ${current} voti attuali verranno spostati nello storico. Continuare?`)){
   renderSettings();toast("Modifica annullata.");return;
  }
- data.settings=s;save();checkAutomaticPeriod();renderAll();toast("Impostazioni salvate.");
+ const previous=JSON.parse(JSON.stringify(data));
+ data.settings=s;
+ if(!save()){data=previous;return}
+ checkAutomaticPeriod();renderAll();toast("Impostazioni salvate.");
 }
 function openHistory(historyId){
  const h=(data.history||[]).find(x=>x.id===historyId);if(!h)return;
@@ -1032,7 +1132,7 @@ function openHistory(historyId){
  (h.subjects||[]).forEach(s=>{
   const a=average(s.grades||[]),gs=(s.grades||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
   if(!gs.length)return;
-  rows.push(`<div class="avg-card"><div class="avg-head"><strong>${s.icon} ${esc(s.name)}</strong><b class="${cls(a)}">${a==null?"—":f(a)}</b></div><div class="avg-meta"><span>${gs.length} ${gs.length===1?"voto":"voti"}</span><span>media ponderata</span></div>${gs.map(g=>{const d=g.date?new Date(g.date+"T12:00:00").toLocaleDateString("it-IT"):"—";return `<div style="display:flex;align-items:center;gap:10px;padding-top:10px;margin-top:10px;border-top:1px solid var(--line)"><div style="flex:1"><b>${esc(g.type)}</b><div class="grade-details">${d}${g.note?" · "+esc(g.note):""} · Peso ${f(n(g.weight,100))}%</div></div><div class="grade-value ${cls(n(g.value))}">${gradeLabel(n(g.value))}</div></div>`}).join("")}</div>`);
+  rows.push(`<div class="avg-card"><div class="avg-head"><strong>${esc(s.icon)} ${esc(s.name)}</strong><b class="${cls(a)}">${a==null?"—":f(a)}</b></div><div class="avg-meta"><span>${gs.length} ${gs.length===1?"voto":"voti"}</span><span>media ponderata</span></div>${gs.map(g=>{const d=g.date?new Date(g.date+"T12:00:00").toLocaleDateString("it-IT"):"—";return `<div style="display:flex;align-items:center;gap:10px;padding-top:10px;margin-top:10px;border-top:1px solid var(--line)"><div style="flex:1"><b>${esc(g.type)}</b><div class="grade-details">${d}${g.note?" · "+esc(g.note):""} · Peso ${f(n(g.weight,100))}%</div></div><div class="grade-value ${cls(n(g.value))}">${gradeLabel(n(g.value))}</div></div>`}).join("")}</div>`);
  });
  document.getElementById("historyModalBody").innerHTML=rows.length?rows.join(""):`<div class="empty"><b>Nessun voto</b>Non risultano voti archiviati in questo periodo.</div>`;
  document.getElementById("historyModal").classList.add("show");
@@ -1042,7 +1142,7 @@ function openHistory(historyId){
 function openCalcModal(subjectId=null){
  if(!data.subjects.length)return toast("Aggiungi prima una materia.");
  const sel=document.getElementById("calcSubject");
- sel.innerHTML=data.subjects.map(s=>`<option value="${s.id}">${s.icon} ${esc(s.name)}</option>`).join("");
+ sel.innerHTML=data.subjects.map(s=>`<option value="${s.id}">${esc(s.icon)} ${esc(s.name)}</option>`).join("");
  const fallback=(data.subjects.find(s=>(s.grades||[]).length)||data.subjects[0]).id;
  sel.value=subjectId&&data.subjects.some(s=>s.id===subjectId)?subjectId:fallback;
  renderCalc();
@@ -1130,7 +1230,11 @@ function mergeSubjects(target,incoming,st){
   t.grades=t.grades||[];
   inc.grades.forEach(g=>{
    const sameId=t.grades.find(x=>x.id===g.id);
-   if(sameId){if(!sameGrade(sameId,g)){Object.assign(sameId,g);st.updatedGrades++}return}
+   if(sameId){
+    // Un backup vecchio non deve sovrascrivere un voto modificato sul dispositivo.
+    if(!sameGrade(sameId,g))st.skippedConflicts=(st.skippedConflicts||0)+1;
+    return;
+   }
    if(t.grades.some(x=>sameGrade(x,g)))return; // voto identico già presente
    if(target.some(s=>(s.grades||[]).some(x=>x.id===g.id)))g.id=id();
    t.grades.push(g);st.addedGrades++;
@@ -1148,7 +1252,7 @@ function importBackup(input){
   if(!src||!Array.isArray(src.subjects))return toast("File non valido: non è un backup SchoolFlow.");
   // dal benvenuto (telefono nuovo): si parte senza materie predefinite, solo quelle del backup
   const merged=JSON.parse(JSON.stringify(onb?Object.assign({},data,{subjects:[]}):data));
-  const st={newSubjects:0,addedGrades:0,updatedGrades:0,newPeriods:0};
+  const st={newSubjects:0,addedGrades:0,updatedGrades:0,newPeriods:0,skippedConflicts:0};
   const localEmpty=!grades(data.subjects).length&&!(data.history||[]).length;
   const inSettings=Object.assign(defaultSettings(),src.settings||{});
   // Telefono nuovo/vuoto: prendo anche le impostazioni dei periodi dal backup
@@ -1188,15 +1292,25 @@ function importBackup(input){
   }else{
    mergeSubjects(merged.subjects,curSubs,st);
   }
-  if(!st.newSubjects&&!st.addedGrades&&!st.updatedGrades&&!st.newPeriods&&!localEmpty)return toast("Questo backup è già tutto presente.");
+  if(!st.newSubjects&&!st.addedGrades&&!st.newPeriods&&!localEmpty)return toast(st.skippedConflicts?"Backup già presente: i voti modificati sul dispositivo non vengono sovrascritti.":"Questo backup è già tutto presente.");
   const tot=grades(curSubs).length+(Array.isArray(src.history)?src.history:[]).reduce((t,h)=>t+grades(cleanSubjects(h?.subjects)).length,0);
   const msg=`Backup del ${raw.exportedAt?new Date(raw.exportedAt).toLocaleDateString("it-IT"):"—"} · ${tot} voti nel file.\n\n`+
-   `• Materie nuove: ${st.newSubjects}\n• Voti aggiunti: ${st.addedGrades}\n• Voti aggiornati: ${st.updatedGrades}\n• Periodi archiviati aggiunti: ${st.newPeriods}\n\n`+
+   `• Materie nuove: ${st.newSubjects}\n• Voti aggiunti: ${st.addedGrades}\n• Voti già presenti conservati: ${st.skippedConflicts}\n• Periodi archiviati aggiunti: ${st.newPeriods}\n\n`+
    `I voti già presenti su questo telefono non vengono cancellati. Importare?`;
   if(!confirm(msg))return toast("Importazione annullata.");
   try{localStorage.setItem(KEY+"_before_import",JSON.stringify(data))}catch(e){}
-  data=merged;viewPeriodId=null;
-  if(save()){if(onb)closeOnboarding();renderAll();toast(`Importati ${st.addedGrades} voti, ${st.newSubjects} materie nuove.`)}
+  const previous=data,wasBlocked=storageProblem;
+  data=merged;
+  if(wasBlocked){
+   // Sostituzione consentita solo dopo che l'utente ha scelto e confermato il backup.
+   storageProblem=false;storageIssue="";
+  }
+  if(save()){
+   viewPeriodId=null;
+   document.getElementById("storageRescue").hidden=true;
+   if(onb)closeOnboarding();renderAll();
+   toast(`Importati ${st.addedGrades} voti, ${st.newSubjects} materie nuove.`);
+  }else{data=previous;storageProblem=wasBlocked}
  };
  reader.onerror=()=>toast("Impossibile leggere il file.");
  reader.readAsText(file);
@@ -1257,10 +1371,12 @@ function onbFinish(skip){
  const n=periodConfig(onb.type).names.length,ends=onb.ends.slice(0,n);
  if(!skip){for(let k=0;k<n;k++){if(!ends[k])return toast("Inserisci tutte le date di fine periodo.");if(k&&ends[k]<=ends[k-1])return toast(`La fine del ${k+1}° periodo deve essere dopo la fine del ${k}°.`)}}
  const y=onbYearStart(),d=onbDefaults(onb.type);
+ const previous=data;
  data={subjects:onb.subjects.filter(x=>x.on).map(x=>({id:id(),name:x.name,icon:x.icon,grades:[]})),
   settings:{periodType:onb.type,schoolYear:`${y}/${String(y+1).slice(-2)}`,firstPeriodEnd:ends[0]||d[0],secondPeriodEnd:ends[1]||d[1],thirdPeriodEnd:(n===3?ends[2]:ends[1])||d[2],currentPeriod:onbStartPeriod(ends,n)},
   history:[],onboarded:true};
- save();closeOnboarding();viewPeriodId=null;showPage("home");
+ if(!save()){data=previous;return}
+ closeOnboarding();viewPeriodId=null;showPage("home");
  toast(data.subjects.length?"Tutto pronto! Tocca ＋ per aggiungere il primo voto.":"Tutto pronto! Aggiungi le tue materie da Materie.");
 }
 function renderOnb(){
@@ -1321,14 +1437,16 @@ function startNewSchoolYear(){
  msg+=`Le materie restano. Le date dei periodi vengono spostate di un anno (potrai modificarle).\nNon viene cancellato nessun voto.`;
  if(!confirm(msg))return;
  try{localStorage.setItem(KEY+"_before_new_year",JSON.stringify(data))}catch(e){}
+ const previous=JSON.parse(JSON.stringify(data));
  if(cur){
-  // voti inseriti dopo la fine dell'ultimo periodo: finiscono nell'archivio dell'ultimo periodo
   if(done)s.currentPeriod=cfg.names.length;
-  archiveCurrentPeriod();
+  if(!archiveCurrentPeriod(false)){data=previous;return}
  }
  s.schoolYear=next;s.currentPeriod=1;
  s.firstPeriodEnd=addOneYear(s.firstPeriodEnd);s.secondPeriodEnd=addOneYear(s.secondPeriodEnd);s.thirdPeriodEnd=addOneYear(s.thirdPeriodEnd);
- data.settings=s;viewPeriodId=null;save();renderAll();
+ data.settings=s;
+ if(!save()){data=previous;return}
+ viewPeriodId=null;renderAll();
  toast(`Benvenuto nel ${next}! Controlla le date dei periodi.`);
 }
 function renderNewYear(){
@@ -1374,11 +1492,17 @@ function openSubjectModal(subjectId=null){
  setTimeout(()=>document.getElementById("subjectName").focus(),80);
 }
 function saveSubject(){
- const name=document.getElementById("subjectName").value.trim(),icon=document.getElementById("subjectIcon").value;
+ const name=document.getElementById("subjectName").value.trim().slice(0,40),icon=safeIcon(document.getElementById("subjectIcon").value);
  if(!name)return toast("Inserisci il nome della materia.");
- if(editing){const s=data.subjects.find(x=>x.id===editing);s.name=name;s.icon=icon;toast("Materia modificata.");}
- else{data.subjects.push({id:id(),name,icon,grades:[]});toast("Materia aggiunta.");}
- save();closeModal("subjectModal");renderAll();
+ const previous=JSON.parse(JSON.stringify(data));
+ if(editing){
+  const subject=data.subjects.find(x=>x.id===editing);
+  if(!subject)return toast("Materia non trovata.");
+  subject.name=name;subject.icon=icon;
+ }else data.subjects.push({id:id(),name,icon,grades:[]});
+ if(!save()){data=previous;return}
+ toast(editing?"Materia modificata.":"Materia aggiunta.");
+ closeModal("subjectModal");renderAll();
 }
 let removedSubjects=[],subjectUndoTimer=null;
 function closeSubjectUndo(){
@@ -1423,7 +1547,7 @@ function openGradeModal(subjectId=null){
  document.getElementById("gradeModalTitle").textContent="Aggiungi voto";
  document.getElementById("gradeSaveButton").textContent="Aggiungi voto";
  if(!data.subjects.length)return toast("Aggiungi prima una materia.");
- const sel=document.getElementById("gradeSubject");sel.innerHTML=data.subjects.map(s=>`<option value="${s.id}">${s.icon} ${esc(s.name)}</option>`).join("");
+ const sel=document.getElementById("gradeSubject");sel.innerHTML=data.subjects.map(s=>`<option value="${s.id}">${esc(s.icon)} ${esc(s.name)}</option>`).join("");
  if(subjectId)sel.value=subjectId;
  document.getElementById("gradeValue").value="";document.getElementById("gradeWeight").value=100;document.getElementById("gradeType").value="Orale";document.getElementById("gradeDate").value=todayISO();document.getElementById("gradeNote").value="";previewGrade();
  document.getElementById("gradeModal").classList.add("show");setTimeout(()=>renderGradePick(true),30);
@@ -1461,6 +1585,7 @@ function previewGrade(){
  renderGradePick(false);
 }
 function saveGrade(){
+ const before=JSON.parse(JSON.stringify(data));
  const sid=document.getElementById("gradeSubject").value;
  const v=parseGrade(document.getElementById("gradeValue").value);
  const w=parseNum(document.getElementById("gradeWeight").value);
@@ -1486,17 +1611,17 @@ function saveGrade(){
      }else{
        Object.assign(g,gradeData);
      }
-     toast("Voto modificato.");
    }else{
-     toast("Voto non trovato.");
+     return toast("Voto non trovato.");
    }
  }else{
    s.grades=s.grades||[];
    s.grades.push({...gradeData,id:id()});
-   toast(`Voto ${gradeLabel(v)} aggiunto a ${s.name}.`);
  }
+ if(!save()){data=before;return}
+ toast(editingGrade?"Voto modificato.":`Voto ${gradeLabel(v)} aggiunto a ${s.name}.`);
  editingGrade=null;
- save();closeModal("gradeModal");renderAll();
+ closeModal("gradeModal");renderAll();
  if(currentSubjectId)renderSubjectDetail();
 }
 // Un voto eliminato può essere ripristinato entro otto secondi.
@@ -1550,14 +1675,23 @@ document.querySelectorAll(".modal-wrap").forEach(m=>m.addEventListener("click",e
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(window.tt);window.tt=setTimeout(()=>t.classList.remove("show"),2200)}
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
 applyTheme();
-let sfFirstRun=false;try{sfFirstRun=!localStorage.getItem(KEY)}catch(e){}
-checkAutomaticPeriod();
-renderAll();
-if(sfFirstRun)openOnboarding();
-runSplash();
-// Funzionamento offline: registra il service worker (non tocca i voti salvati)
+// Non mostrare onboarding né archiviare voti prima della lettura di localStorage + Android.
+recoverStorageBeforeStart().catch(e=>{
+ console.error("SchoolFlow: recupero iniziale non riuscito",e);
+ storageProblem=true;storageIssue="Recupero dati non riuscito. Nessun dato verrà sovrascritto.";
+ document.getElementById("storageRescue").hidden=false;
+ document.getElementById("storageRescueReason").textContent=storageIssue;
+ runSplash();
+});
+// Nell'app Android gli asset sono già offline; il service worker potrebbe
+// servire HTML vecchio o ostacolare il bridge dei plugin nativi.
 if("serviceWorker" in navigator&&location.protocol!=="file:"){
- window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+ const nativeApp=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
+ if(nativeApp){
+  window.addEventListener("load",()=>navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{}));
+ }else{
+  window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+ }
 }
 window.addEventListener("resize",()=>{clearTimeout(window.rt);window.rt=setTimeout(()=>{if(document.getElementById("statistics").classList.contains("active"))renderStatistics()},150)});
 </script>
