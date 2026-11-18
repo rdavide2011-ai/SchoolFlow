@@ -37,11 +37,12 @@ jobs:
           cat > package.json <<'EOF'
           {
             "name": "schoolflow-android",
-            "version": "1.1.0",
+            "version": "1.1.1",
             "private": true,
             "dependencies": {
               "@capacitor/core": "7.4.3",
-              "@capacitor/android": "7.4.3"
+              "@capacitor/android": "7.4.3",
+              "@capacitor/preferences": "7.0.4"
             },
             "devDependencies": {
               "@capacitor/cli": "7.4.3"
@@ -54,7 +55,8 @@ jobs:
             "appName": "SchoolFlow",
             "webDir": "www",
             "server": {
-              "androidScheme": "https"
+              "androidScheme": "https",
+              "hostname": "localhost"
             }
           }
           EOF
@@ -66,9 +68,9 @@ jobs:
           from pathlib import Path
           path=Path("android/app/build.gradle")
           old=path.read_text()
-          new,n=re.subn(r'\bversionCode\s+\d+', 'versionCode 9', old, count=1)
+          new,n=re.subn(r'\bversionCode\s+\d+', 'versionCode 10', old, count=1)
           if n!=1: raise SystemExit("Could not assign Android versionCode")
-          new,n=re.subn(r'\bversionName\s+["\x27][^"\x27]+["\x27]', 'versionName "1.1.0"', new, count=1)
+          new,n=re.subn(r'\bversionName\s+["\x27][^"\x27]+["\x27]', 'versionName "1.1.1"', new, count=1)
           if n!=1: raise SystemExit("Could not assign Android versionName")
           path.write_text(new)
           # Capacitor 7 defaults to minSdkVersion 23. Google Play's automatic
@@ -100,6 +102,7 @@ jobs:
         run: |
           cmp index.html www/index.html
           cmp index.html android/app/src/main/assets/public/index.html
+          grep -q "PreferencesPlugin" android/app/src/main/assets/capacitor.plugins.json
           node <<'NODE'
           const fs=require('fs');
           const html=fs.readFileSync('index.html','utf8');
@@ -111,7 +114,8 @@ jobs:
             undoGrade:['undoGradeDelete','gradeUndoLabel','deleteGradeFromDetail'],
             undoSubject:['undoSubjectDelete','subjectUndoLabel'],
             backup:['function exportBackup','function importBackup'],
-            preservedStorage:['schoolflow_mobile_v2']
+            preservedStorage:['schoolflow_mobile_v2','_storageRevision','SHADOW_KEY','NATIVE_KEY','recoverStorageBeforeStart'],
+            safeSaving:['storageProblem','queueNativeSave','archiveCurrentPeriod(persist=true)']
           };
           for(const [feature,markers] of Object.entries(tests)){
             for(const marker of markers){
@@ -126,7 +130,8 @@ jobs:
           NODE
           grep -q '"appId": "com.rivapps.schoolflow"' capacitor.config.json
           grep -q '"androidScheme": "https"' capacitor.config.json
-          grep -q 'versionCode 9' android/app/build.gradle
+          grep -q '"hostname": "localhost"' capacitor.config.json
+          grep -q 'versionCode 10' android/app/build.gradle
           grep -Eq 'minSdkVersion[[:space:]]*=[[:space:]]*24' android/variables.gradle
           grep -Eq 'compileSdkVersion[[:space:]]*=[[:space:]]*36' android/variables.gradle
           grep -Eq 'targetSdkVersion[[:space:]]*=[[:space:]]*36' android/variables.gradle
@@ -163,7 +168,7 @@ jobs:
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging android/app/build/outputs/apk/debug/app-debug.apk > /tmp/schoolflow-aapt.txt
           grep -E "^package:|^sdkVersion:|^targetSdkVersion:" /tmp/schoolflow-aapt.txt
           grep -q "name='com.rivapps.schoolflow'" /tmp/schoolflow-aapt.txt
-          grep -q "versionCode='9'" /tmp/schoolflow-aapt.txt
+          grep -q "versionCode='10'" /tmp/schoolflow-aapt.txt
           grep -q "sdkVersion:'24'" /tmp/schoolflow-aapt.txt
           grep -q "targetSdkVersion:'36'" /tmp/schoolflow-aapt.txt
       - uses: actions/upload-artifact@v4
