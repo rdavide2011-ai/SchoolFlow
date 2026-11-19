@@ -140,14 +140,12 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
 .ranking{display:grid;gap:8px;margin-top:10px}.rank-row{display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--line);border-radius:15px;padding:11px 12px;box-shadow:var(--shadow)}.rank-num{width:22px;font-size:10px;font-weight:900;color:var(--muted)}.rank-name{flex:1;font-size:12px;font-weight:850;min-width:0}.rank-bar{width:75px;height:6px;background:var(--d-soft,#eef0f4);border-radius:99px;overflow:hidden}.rank-bar i{display:block;height:100%;background:var(--accent);border-radius:99px}.rank-value{width:42px;text-align:right;font-size:13px;font-weight:950}
 .bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--d-nav,rgba(255,255,255,.94));backdrop-filter:blur(20px);border-top:1px solid var(--line);padding:7px 10px calc(7px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(6,1fr)}
 .bottom-nav button{background:none;color:var(--d-muted,#9096a1);border-radius:14px;padding:7px 2px;font-size:9px;font-weight:800}.bottom-nav button.active{background:var(--accentSoft);color:var(--accent)}.bottom-nav .ico{display:block;font-size:20px;line-height:21px;margin-bottom:2px}
-.sf-stamp{position:fixed;left:50%;top:42%;z-index:960;width:84px;height:84px;margin:-42px 0 0 -42px;border-radius:50%;display:grid;place-items:center;background:var(--card);border:3px solid currentColor;font-weight:900;font-size:30px;pointer-events:none;opacity:0;box-shadow:var(--shadow)}
-.sf-stamp::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:3px solid currentColor;opacity:0}
-.sf-stamp.go{animation:sfStamp .9s cubic-bezier(.2,.9,.3,1.25) forwards}
-.sf-stamp.go::after{animation:sfPulse .9s ease-out forwards}
-@keyframes sfStamp{0%{opacity:0;transform:scale(.4)}22%{opacity:1;transform:scale(1.12)}38%{transform:scale(1)}78%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.96) translateY(-8px)}}
-@keyframes sfPulse{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.7);opacity:0}}
-@keyframes sfStampRM{0%,100%{opacity:0}15%,80%{opacity:1}}
-@media (prefers-reduced-motion:reduce){.sf-stamp.go{animation:sfStampRM .9s forwards}.sf-stamp.go::after{animation:none}}
+.sf-chip{position:fixed;left:0;top:0;z-index:960;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:var(--card);border:3px solid currentColor;font-weight:900;font-size:22px;pointer-events:none;box-shadow:0 10px 26px rgba(0,0,0,.3);will-change:transform,opacity}
+.sf-receive{animation:sfReceive .7s cubic-bezier(.2,.9,.3,1.3)}
+@keyframes sfReceive{0%{box-shadow:0 0 0 0 var(--sfc)}40%{transform:scale(1.04)}100%{transform:none;box-shadow:0 0 0 18px transparent}}
+.sf-receive .subject-score strong,.sf-receive .subject-manage-average strong,.sf-receive .grade-value{display:inline-block;animation:sfNum .7s cubic-bezier(.2,.9,.3,1.6)}
+@keyframes sfNum{0%{transform:scale(1)}40%{transform:scale(1.55)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.sf-receive,.sf-receive .subject-score strong,.sf-receive .subject-manage-average strong,.sf-receive .grade-value{animation:none}}
 .toast{position:fixed;left:50%;bottom:92px;transform:translate(-50%,15px);background:var(--d-toast,#17191f);color:#fff;padding:11px 15px;border-radius:13px;font-size:11px;font-weight:800;opacity:0;pointer-events:none;transition:.2s;z-index:100;white-space:nowrap}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .period-bar{display:flex;flex-direction:column;gap:8px;padding-top:10px}
@@ -790,15 +788,53 @@ function checkAutomaticPeriod(){
  if(changed){setTimeout(()=>afterSplash(()=>toast(`Archiviato: ${archived.join(", ")}`)),300)}
  return changed;
 }
-// Conferma al salvataggio: timbro colorato con il voto + vibrazione dove il telefono la supporta (Android).
-function sfConfirm(label,colorClass){
- try{if(navigator.vibrate)navigator.vibrate(30)}catch(e){}
- try{
-  let el=document.getElementById("sfStamp");
-  if(!el){el=document.createElement("div");el.id="sfStamp";el.setAttribute("aria-hidden","true");document.body.appendChild(el)}
-  el.className="sf-stamp";el.textContent=label;void el.offsetWidth;
-  el.className="sf-stamp go "+colorClass;
- }catch(e){}
+// Conferma al salvataggio: il voto vola dal pulsante Salva alla materia in cui l'hai aggiunto.
+let sfTap=null;
+document.addEventListener("pointerdown",e=>{sfTap={x:e.clientX,y:e.clientY}},true);
+function sfConfirm(label,colorClass,sid,msg){
+ setTimeout(()=>{try{
+  const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const vis=e=>e&&e.offsetParent!==null?e:null;
+  const subj=data.subjects.find(x=>x.id===sid);
+  const gid=subj&&subj.grades.length?subj.grades[subj.grades.length-1].id:null;
+  let gcard=null;
+  if(gid){const b=document.querySelector(`.grade-card button[onclick*="'${gid}'"]`);gcard=vis(b&&b.closest(".grade-card"))}
+  const h=document.querySelector(`.subject[onclick^="openSubjectDetail('${sid}'"]`);
+  const mb=document.querySelector(`.subject-manage-top[onclick^="openSubjectDetail('${sid}'"]`);
+  const scard=vis(h)||vis(mb&&mb.closest(".subject-manage"));
+  const onDetail=document.getElementById("subjectDetail").classList.contains("active");
+  const target=onDetail?(gcard||scard):(scard||gcard);
+  const color=colorClass==="good"?"var(--green)":colorClass==="mid"?"var(--orange)":"var(--red)";
+  const land=()=>{
+   try{if(navigator.vibrate)navigator.vibrate(30)}catch(e){}
+   if(!target||reduce){if(msg)toast(msg);return}
+   target.style.setProperty("--sfc",color);target.classList.add("sf-receive");
+   setTimeout(()=>target.classList.remove("sf-receive"),800);
+  };
+  if(!target||reduce||!document.body.animate){land();return}
+  target.scrollIntoView({block:"nearest"});
+  const aim=target.querySelector(".subject-score strong,.subject-manage-average strong,.grade-value")||target;
+  const ar=aim.getBoundingClientRect();
+  const tx=ar.left+ar.width/2,ty=ar.top+ar.height/2;
+  const fx=sfTap?sfTap.x:innerWidth/2,fy=sfTap?sfTap.y:innerHeight*0.75;
+  const chip=document.createElement("div");
+  chip.className="sf-chip "+colorClass;chip.textContent=label;chip.setAttribute("aria-hidden","true");
+  document.body.appendChild(chip);
+  const cx=fx+(tx-fx)*0.3,cy=Math.min(fy,ty)-140;
+  const ease=t=>t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+  const fr=[
+   {transform:`translate(${fx-28}px,${fy-28}px) scale(.4)`,opacity:0,offset:0},
+   {transform:`translate(${fx-28}px,${fy-28}px) scale(1.2)`,opacity:1,offset:0.14},
+   {transform:`translate(${fx-28}px,${fy-28}px) scale(1)`,opacity:1,offset:0.24}
+  ];
+  for(let i=1;i<=14;i++){
+   const u=i/14,t=ease(u),m=1-t;
+   const x=m*m*fx+2*m*t*cx+t*t*tx,y=m*m*fy+2*m*t*cy+t*t*ty;
+   fr.push({transform:`translate(${x-28}px,${y-28}px) scale(${1-0.55*t})`,opacity:i===14?0:1,offset:0.24+0.76*u});
+  }
+  const a=chip.animate(fr,{duration:1000,easing:"linear",fill:"forwards"});
+  a.onfinish=()=>{chip.remove();land()};
+ }catch(e){}},80);
 }
 function id(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function n(v,fb=0){const x=Number(v);return Number.isFinite(x)?x:fb}
@@ -1637,8 +1673,8 @@ function saveGrade(){
    s.grades.push({...gradeData,id:id()});
  }
  if(!save()){data=before;return}
- if(!editingGrade)sfConfirm(gradeLabel(v),cls(v));
- toast(editingGrade?"Voto modificato.":`Voto ${gradeLabel(v)} aggiunto a ${s.name}.`);
+ if(!editingGrade)sfConfirm(gradeLabel(v),cls(v),sid,"Voto "+gradeLabel(v)+" aggiunto a "+s.name+".");
+ if(editingGrade)toast("Voto modificato.");
  editingGrade=null;
  closeModal("gradeModal");renderAll();
  if(currentSubjectId)renderSubjectDetail();
