@@ -782,6 +782,9 @@ function checkAutomaticPeriod(){
  if(changed){setTimeout(()=>afterSplash(()=>toast(`Archiviato: ${archived.join(", ")}`)),300)}
  return changed;
 }
+// Vibrazione leggera (solo iPhone): un interruttore nascosto fa partire il tocco aptico di Safari.
+let sfHapticLabel=null;
+function haptic(){try{if(!sfHapticLabel){const l=document.createElement("label");l.setAttribute("aria-hidden","true");l.style.cssText="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none";const i=document.createElement("input");i.type="checkbox";i.setAttribute("switch","");i.tabIndex=-1;l.appendChild(i);document.body.appendChild(l);sfHapticLabel=l}sfHapticLabel.click()}catch(e){}}
 function id(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function n(v,fb=0){const x=Number(v);return Number.isFinite(x)?x:fb}
 function f(v){return Number.isFinite(v)?v.toLocaleString("it-IT",{maximumFractionDigits:2}):"—"}
@@ -1619,6 +1622,7 @@ function saveGrade(){
    s.grades.push({...gradeData,id:id()});
  }
  if(!save()){data=before;return}
+ if(!editingGrade)haptic();
  toast(editingGrade?"Voto modificato.":`Voto ${gradeLabel(v)} aggiunto a ${s.name}.`);
  editingGrade=null;
  closeModal("gradeModal");renderAll();
