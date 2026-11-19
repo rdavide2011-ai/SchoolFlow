@@ -789,8 +789,8 @@ function checkAutomaticPeriod(){
  return changed;
 }
 // Conferma al salvataggio: il voto vola dal pulsante Salva alla materia in cui l'hai aggiunto.
-let sfTap=null;
-document.addEventListener("pointerdown",e=>{sfTap={x:e.clientX,y:e.clientY}},true);
+let sfTap=null,sfRun=0;
+document.addEventListener("pointerdown",e=>{sfTap={x:e.clientX,y:e.clientY,t:Date.now()}},true);
 function sfConfirm(label,colorClass,sid,msg){
  setTimeout(()=>{try{
   const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -808,21 +808,32 @@ function sfConfirm(label,colorClass,sid,msg){
   const land=()=>{
    try{if(navigator.vibrate)navigator.vibrate(30)}catch(e){}
    if(!target||reduce){if(msg)toast(msg);return}
-   target.style.setProperty("--sfc",color);target.classList.add("sf-receive");
-   setTimeout(()=>target.classList.remove("sf-receive"),800);
+   let tg=target;
+   if(!document.body.contains(tg)){const q=document.querySelector(`.subject[onclick^="openSubjectDetail('${sid}'"]`)||document.querySelector(`.subject-manage-top[onclick^="openSubjectDetail('${sid}'"]`);tg=q&&(q.closest(".subject-manage")||q)}
+   if(!tg||tg.offsetParent===null){if(msg)toast(msg);return}
+   tg.style.setProperty("--sfc",color);tg.classList.add("sf-receive");
+   setTimeout(()=>tg.classList.remove("sf-receive"),800);
   };
   if(!target||reduce||!document.body.animate){land();return}
   const aim=target.querySelector(".subject-score strong,.subject-manage-average strong,.grade-value")||target;
   const sy0=window.scrollY,docY=aim.getBoundingClientRect().top+sy0+aim.offsetHeight/2,docX=aim.getBoundingClientRect().left+aim.offsetWidth/2;
   const maxY=Math.max(0,document.documentElement.scrollHeight-innerHeight);
   const sy1=Math.max(0,Math.min(maxY,docY-innerHeight*0.45));
-  const fx=sfTap?sfTap.x:innerWidth/2,fy=sfTap?sfTap.y:innerHeight*0.75;
+  const fresh=sfTap&&Date.now()-sfTap.t<4000;
+  const fx=fresh?sfTap.x:innerWidth/2,fy=fresh?sfTap.y:innerHeight*0.8;
   const chip=document.createElement("div");
   chip.className="sf-chip "+colorClass;chip.textContent=label;chip.setAttribute("aria-hidden","true");
   document.body.appendChild(chip);
   const ease=t=>t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
-  const HOLD=350,FLY=1500,t0=performance.now();
+  const HOLD=350,FLY=1500,t0=performance.now(),run=++sfRun;
+  let manual=false;const stop=()=>{manual=true};
+  addEventListener("touchstart",stop,{once:true,passive:true});addEventListener("wheel",stop,{once:true,passive:true});
+  let done=false;
+  const finish=ok=>{if(done)return;done=true;chip.remove();removeEventListener("touchstart",stop);removeEventListener("wheel",stop);if(ok)land()};
+  setTimeout(()=>finish(true),HOLD+FLY+1500);
   const frame=now=>{
+   if(done)return;
+   if(run!==sfRun){finish(false);return}
    const el=now-t0;
    if(el<HOLD){
     const k=el/HOLD;
@@ -830,13 +841,15 @@ function sfConfirm(label,colorClass,sid,msg){
     requestAnimationFrame(frame);return;
    }
    const u=Math.min(1,(el-HOLD)/FLY),t=ease(u),m=1-t;
-   window.scrollTo(0,sy0+(sy1-sy0)*t);
-   const tx=docX,ty=docY-(sy0+(sy1-sy0)*t);
+   if(!manual)window.scrollTo(0,sy0+(sy1-sy0)*t);
+   let tx=docX,ty=docY-window.scrollY;
+   const live=document.body.contains(aim)?aim.getBoundingClientRect():null;
+   if(live&&live.width){tx=live.left+live.width/2;ty=live.top+live.height/2}
    const cx=fx+(tx-fx)*0.3,cy=Math.min(fy,ty)-90*Math.sin(Math.PI*u);
    const x=m*m*fx+2*m*t*cx+t*t*tx,y=m*m*fy+2*m*t*cy+t*t*ty;
    chip.style.transform=`translate(${x-28}px,${y-28}px) scale(${1-0.55*t})`;
    chip.style.opacity=u>0.94?String((1-u)/0.06):"1";
-   if(u<1)requestAnimationFrame(frame);else{chip.remove();land()}
+   if(u<1)requestAnimationFrame(frame);else finish(true)
   };
   chip.style.opacity="0";requestAnimationFrame(frame);
  }catch(e){}},80);
