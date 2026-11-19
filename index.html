@@ -812,28 +812,33 @@ function sfConfirm(label,colorClass,sid,msg){
    setTimeout(()=>target.classList.remove("sf-receive"),800);
   };
   if(!target||reduce||!document.body.animate){land();return}
-  target.scrollIntoView({block:"nearest"});
   const aim=target.querySelector(".subject-score strong,.subject-manage-average strong,.grade-value")||target;
-  const ar=aim.getBoundingClientRect();
-  const tx=ar.left+ar.width/2,ty=ar.top+ar.height/2;
+  const sy0=window.scrollY,docY=aim.getBoundingClientRect().top+sy0+aim.offsetHeight/2,docX=aim.getBoundingClientRect().left+aim.offsetWidth/2;
+  const maxY=Math.max(0,document.documentElement.scrollHeight-innerHeight);
+  const sy1=Math.max(0,Math.min(maxY,docY-innerHeight*0.45));
   const fx=sfTap?sfTap.x:innerWidth/2,fy=sfTap?sfTap.y:innerHeight*0.75;
   const chip=document.createElement("div");
   chip.className="sf-chip "+colorClass;chip.textContent=label;chip.setAttribute("aria-hidden","true");
   document.body.appendChild(chip);
-  const cx=fx+(tx-fx)*0.3,cy=Math.min(fy,ty)-140;
   const ease=t=>t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
-  const fr=[
-   {transform:`translate(${fx-28}px,${fy-28}px) scale(.4)`,opacity:0,offset:0},
-   {transform:`translate(${fx-28}px,${fy-28}px) scale(1.2)`,opacity:1,offset:0.14},
-   {transform:`translate(${fx-28}px,${fy-28}px) scale(1)`,opacity:1,offset:0.24}
-  ];
-  for(let i=1;i<=14;i++){
-   const u=i/14,t=ease(u),m=1-t;
+  const HOLD=350,FLY=1500,t0=performance.now();
+  const frame=now=>{
+   const el=now-t0;
+   if(el<HOLD){
+    const k=el/HOLD;
+    chip.style.transform=`translate(${fx-28}px,${fy-28}px) scale(${.4+.8*Math.sin(Math.min(1,k*1.4)*Math.PI/2)})`;chip.style.opacity=Math.min(1,k*4);
+    requestAnimationFrame(frame);return;
+   }
+   const u=Math.min(1,(el-HOLD)/FLY),t=ease(u),m=1-t;
+   window.scrollTo(0,sy0+(sy1-sy0)*t);
+   const tx=docX,ty=docY-(sy0+(sy1-sy0)*t);
+   const cx=fx+(tx-fx)*0.3,cy=Math.min(fy,ty)-90*Math.sin(Math.PI*u);
    const x=m*m*fx+2*m*t*cx+t*t*tx,y=m*m*fy+2*m*t*cy+t*t*ty;
-   fr.push({transform:`translate(${x-28}px,${y-28}px) scale(${1-0.55*t})`,opacity:i===14?0:1,offset:0.24+0.76*u});
-  }
-  const a=chip.animate(fr,{duration:1000,easing:"linear",fill:"forwards"});
-  a.onfinish=()=>{chip.remove();land()};
+   chip.style.transform=`translate(${x-28}px,${y-28}px) scale(${1-0.55*t})`;
+   chip.style.opacity=u>0.94?String((1-u)/0.06):"1";
+   if(u<1)requestAnimationFrame(frame);else{chip.remove();land()}
+  };
+  chip.style.opacity="0";requestAnimationFrame(frame);
  }catch(e){}},80);
 }
 function id(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
