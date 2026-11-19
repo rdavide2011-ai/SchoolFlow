@@ -140,6 +140,14 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
 .ranking{display:grid;gap:8px;margin-top:10px}.rank-row{display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--line);border-radius:15px;padding:11px 12px;box-shadow:var(--shadow)}.rank-num{width:22px;font-size:10px;font-weight:900;color:var(--muted)}.rank-name{flex:1;font-size:12px;font-weight:850;min-width:0}.rank-bar{width:75px;height:6px;background:var(--d-soft,#eef0f4);border-radius:99px;overflow:hidden}.rank-bar i{display:block;height:100%;background:var(--accent);border-radius:99px}.rank-value{width:42px;text-align:right;font-size:13px;font-weight:950}
 .bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--d-nav,rgba(255,255,255,.94));backdrop-filter:blur(20px);border-top:1px solid var(--line);padding:7px 10px calc(7px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(6,1fr)}
 .bottom-nav button{background:none;color:var(--d-muted,#9096a1);border-radius:14px;padding:7px 2px;font-size:9px;font-weight:800}.bottom-nav button.active{background:var(--accentSoft);color:var(--accent)}.bottom-nav .ico{display:block;font-size:20px;line-height:21px;margin-bottom:2px}
+.sf-stamp{position:fixed;left:50%;top:42%;z-index:960;width:84px;height:84px;margin:-42px 0 0 -42px;border-radius:50%;display:grid;place-items:center;background:var(--card);border:3px solid currentColor;font-weight:900;font-size:30px;pointer-events:none;opacity:0;box-shadow:var(--shadow)}
+.sf-stamp::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:3px solid currentColor;opacity:0}
+.sf-stamp.go{animation:sfStamp .9s cubic-bezier(.2,.9,.3,1.25) forwards}
+.sf-stamp.go::after{animation:sfPulse .9s ease-out forwards}
+@keyframes sfStamp{0%{opacity:0;transform:scale(.4)}22%{opacity:1;transform:scale(1.12)}38%{transform:scale(1)}78%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.96) translateY(-8px)}}
+@keyframes sfPulse{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.7);opacity:0}}
+@keyframes sfStampRM{0%,100%{opacity:0}15%,80%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.sf-stamp.go{animation:sfStampRM .9s forwards}.sf-stamp.go::after{animation:none}}
 .toast{position:fixed;left:50%;bottom:92px;transform:translate(-50%,15px);background:var(--d-toast,#17191f);color:#fff;padding:11px 15px;border-radius:13px;font-size:11px;font-weight:800;opacity:0;pointer-events:none;transition:.2s;z-index:100;white-space:nowrap}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .period-bar{display:flex;flex-direction:column;gap:8px;padding-top:10px}
@@ -782,9 +790,16 @@ function checkAutomaticPeriod(){
  if(changed){setTimeout(()=>afterSplash(()=>toast(`Archiviato: ${archived.join(", ")}`)),300)}
  return changed;
 }
-// Vibrazione leggera (solo iPhone): un interruttore nascosto fa partire il tocco aptico di Safari.
-let sfHapticLabel=null;
-function haptic(){try{if(!sfHapticLabel){const l=document.createElement("label");l.setAttribute("aria-hidden","true");l.style.cssText="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none";const i=document.createElement("input");i.type="checkbox";i.setAttribute("switch","");i.tabIndex=-1;l.appendChild(i);document.body.appendChild(l);sfHapticLabel=l}sfHapticLabel.click()}catch(e){}}
+// Conferma al salvataggio: timbro colorato con il voto + vibrazione dove il telefono la supporta (Android).
+function sfConfirm(label,colorClass){
+ try{if(navigator.vibrate)navigator.vibrate(30)}catch(e){}
+ try{
+  let el=document.getElementById("sfStamp");
+  if(!el){el=document.createElement("div");el.id="sfStamp";el.setAttribute("aria-hidden","true");document.body.appendChild(el)}
+  el.className="sf-stamp";el.textContent=label;void el.offsetWidth;
+  el.className="sf-stamp go "+colorClass;
+ }catch(e){}
+}
 function id(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function n(v,fb=0){const x=Number(v);return Number.isFinite(x)?x:fb}
 function f(v){return Number.isFinite(v)?v.toLocaleString("it-IT",{maximumFractionDigits:2}):"—"}
@@ -1622,7 +1637,7 @@ function saveGrade(){
    s.grades.push({...gradeData,id:id()});
  }
  if(!save()){data=before;return}
- if(!editingGrade)haptic();
+ if(!editingGrade)sfConfirm(gradeLabel(v),cls(v));
  toast(editingGrade?"Voto modificato.":`Voto ${gradeLabel(v)} aggiunto a ${s.name}.`);
  editingGrade=null;
  closeModal("gradeModal");renderAll();
