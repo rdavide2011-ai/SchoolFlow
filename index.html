@@ -794,6 +794,11 @@ document.addEventListener("pointerdown",e=>{sfTap={x:e.clientX,y:e.clientY,t:Dat
 function sfConfirm(label,colorClass,sid,msg){
  setTimeout(()=>{try{
   const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Se il voto è stato aggiunto dentro la materia, si torna alla Home: da lì il voto vola verso la cartella della materia.
+  if(document.getElementById("subjectDetail").classList.contains("active")){
+   showPage("home");window.scrollTo(0,0);
+   if(homeSubjectFilter!=="all"&&!document.querySelector(`.subject[onclick^="openSubjectDetail('${sid}'"]`))setHomeSubjectFilter("all");
+  }
   const vis=e=>e&&e.offsetParent!==null?e:null;
   const subj=data.subjects.find(x=>x.id===sid);
   const gid=subj&&subj.grades.length?subj.grades[subj.grades.length-1].id:null;
@@ -802,8 +807,7 @@ function sfConfirm(label,colorClass,sid,msg){
   const h=document.querySelector(`.subject[onclick^="openSubjectDetail('${sid}'"]`);
   const mb=document.querySelector(`.subject-manage-top[onclick^="openSubjectDetail('${sid}'"]`);
   const scard=vis(h)||vis(mb&&mb.closest(".subject-manage"));
-  const onDetail=document.getElementById("subjectDetail").classList.contains("active");
-  const target=onDetail?(gcard||scard):(scard||gcard);
+  const target=scard||gcard;
   const color=colorClass==="good"?"var(--green)":colorClass==="mid"?"var(--orange)":"var(--red)";
   const land=()=>{
    try{if(navigator.vibrate)navigator.vibrate(30)}catch(e){}
