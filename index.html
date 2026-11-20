@@ -280,6 +280,15 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{fi
 .theme-seg button .e{font-size:19px}
 .theme-seg button.on{background:var(--accentSoft);color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent)}
 .theme-note{font-size:11px;color:var(--muted);margin:8px 4px 16px}
+.hap-seg{grid-template-columns:repeat(4,minmax(0,1fr))}
+.hap-demo{position:relative;height:76px;margin:10px 0 2px;background:var(--card);border:1px solid var(--line);border-radius:17px;box-shadow:var(--shadow);overflow:hidden;display:flex;align-items:center;justify-content:space-between;padding:0 16px}
+.hap-demo .hd-card{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:900;border-radius:13px;padding:9px 12px;background:var(--d-soft,#f7f7fa)}
+.hap-demo .hd-card b{font-size:17px;color:var(--green)}
+.hap-demo .hd-chip{position:absolute;left:16px;top:50%;margin-top:-18px;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--card);border:2.5px solid var(--green);color:var(--green);font-weight:900;font-size:15px;opacity:0}
+.hap-demo .hd-chip.fly{animation:hdFly .75s cubic-bezier(.45,0,.2,1) forwards}
+@keyframes hdFly{0%{opacity:0;transform:translateX(0) scale(.6)}15%{opacity:1;transform:translateX(0) scale(1)}85%{opacity:1}100%{opacity:0;transform:translateX(calc(var(--hd-dx,200px))) scale(.8)}}
+.hap-demo .hd-card.sf-receive{--sfc:var(--green)}
+@media (prefers-reduced-motion:reduce){.hap-demo .hd-chip.fly{animation:none}}
 /* Filtri Home: solo presentazione delle materie, nessuna modifica ai voti */
 .home-subject-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 4px}
 .home-subject-filters{display:flex;gap:6px;flex-wrap:wrap;flex:1 1 auto}
@@ -468,6 +477,17 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{fi
    <button type="button" role="radio" data-theme-opt="auto" onclick="setTheme('auto')"><span class="e">📱</span>Automatico</button>
   </div>
   <p class="theme-note" id="themeNote">Automatico segue il tema del telefono.</p>
+  <div id="hapticSection" style="display:none">
+   <div class="section-title" style="margin-top:6px"><h2>Vibrazione</h2><span id="hapticLabel">Media</span></div>
+   <div class="theme-seg hap-seg" role="radiogroup" aria-label="Intensità della vibrazione">
+    <button type="button" role="radio" data-hap-opt="off" onclick="setHapticLevel('off')"><span class="e">🔕</span>Spenta</button>
+    <button type="button" role="radio" data-hap-opt="light" onclick="setHapticLevel('light')"><span class="e">〰️</span>Leggera</button>
+    <button type="button" role="radio" data-hap-opt="medium" onclick="setHapticLevel('medium')"><span class="e">📳</span>Media</button>
+    <button type="button" role="radio" data-hap-opt="strong" onclick="setHapticLevel('strong')"><span class="e">💥</span>Forte</button>
+   </div>
+   <div class="hap-demo" id="hapDemo" onclick="playHapticPreview()" role="button" aria-label="Prova la vibrazione"><div class="hd-chip" id="hapChip">9</div><div style="font-size:11px;font-weight:850;color:var(--muted)">Tocca per provare</div><div class="hd-card" id="hapCard">📖 Italiano <b>9</b></div></div>
+   <p class="theme-note">Si sente quando salvi un voto. La forza dipende dal motore di vibrazione del tuo telefono.</p>
+  </div>
   <div class="info-card">⚙️ <b>Periodo scolastico</b><br>Le impostazioni vengono salvate automaticamente sul dispositivo. Quando termina un periodo (es. il trimestre) non si cancella nulla: le materie restano, i voti di quel periodo vengono conservati e SchoolFlow passa al periodo successivo. Puoi rivederli quando vuoi dalla barra dei periodi in alto nella Home.</div>
   <div class="section-title"><h2>Gestione anno scolastico</h2><span id="currentPeriodLabel">—</span></div>
   <div class="subject-detail-summary">
@@ -811,11 +831,7 @@ function sfConfirm(label,colorClass,sid,msg){
   const color=colorClass==="good"?"var(--green)":colorClass==="mid"?"var(--orange)":"var(--red)";
   const land=()=>{
    // Android: vibrazione nativa (plugin Haptics dell'app); nel browser Android: Vibration API. iPhone/web iOS: nessuna vibrazione possibile.
-   try{
-    const cap=window.Capacitor,H=cap&&typeof cap.isNativePlatform==="function"&&cap.isNativePlatform()&&cap.Plugins&&cap.Plugins.Haptics;
-    if(H&&typeof H.notification==="function")H.notification({type:"SUCCESS"}).catch(()=>{});
-    else if(navigator.vibrate)navigator.vibrate([25,40,45]);
-   }catch(e){}
+   playHaptic();
    if(!target||reduce){if(msg)toast(msg);return}
    let tg=target;
    if(!document.body.contains(tg)){const q=document.querySelector(`.subject[onclick^="openSubjectDetail('${sid}'"]`)||document.querySelector(`.subject-manage-top[onclick^="openSubjectDetail('${sid}'"]`);tg=q&&(q.closest(".subject-manage")||q)}
@@ -1157,7 +1173,40 @@ function renderStatistics(){
  multiChart(subjectsWithGrades,subs);
  document.getElementById('statsRanking').innerHTML=ranked.length?ranked.map((x,i)=>`<div class="rank-row"><div class="rank-num">${i+1}</div><div class="rank-name">${esc(x.s.icon)} ${esc(x.s.name)}</div><div class="rank-bar"><i style="width:${Math.max(0,Math.min(100,x.a*10))}%"></i></div><div class="rank-value ${cls(x.a)}">${f(x.a)}</div></div>`).join(''):`<div class="empty"><b>Nessuna materia con voti</b>Inserisci i primi voti per creare le statistiche.</div>`;
 }
+const HAPTIC_KEY="schoolflow_haptic_level",HAPTIC_LEVELS=["off","light","medium","strong"],HAPTIC_NAMES={off:"Spenta",light:"Leggera",medium:"Media",strong:"Forte"};
+function hapticNative(){try{const c=window.Capacitor;return !!(c&&typeof c.isNativePlatform==="function"&&c.isNativePlatform()&&c.Plugins&&c.Plugins.Haptics)}catch(e){return false}}
+// La vibrazione esiste solo su Android (app o browser Android). Su iPhone non si mostra nulla.
+function hapticSupported(){try{if(hapticNative())return true;const ua=navigator.userAgent||"";return /Android/i.test(ua)&&typeof navigator.vibrate==="function"}catch(e){return false}}
+function getHapticLevel(){try{const v=localStorage.getItem(HAPTIC_KEY);if(HAPTIC_LEVELS.includes(v))return v}catch(e){}return "medium"}
+function playHaptic(level){
+ level=level||getHapticLevel();if(level==="off")return;
+ try{
+  if(hapticNative()){const H=window.Capacitor.Plugins.Haptics,ok=()=>{};
+   if(level==="light")H.impact({style:"LIGHT"}).catch(ok);
+   else if(level==="strong")H.vibrate({duration:220}).catch(ok);
+   else H.notification({type:"SUCCESS"}).catch(ok);
+  }else if(navigator.vibrate){navigator.vibrate(level==="light"?[15]:level==="strong"?[70,40,110]:[25,40,45])}
+ }catch(e){}
+}
+function renderHaptic(){
+ const sec=document.getElementById("hapticSection");if(!sec)return;
+ sec.style.display=hapticSupported()?"block":"none";
+ const l=getHapticLevel();
+ sec.querySelectorAll("[data-hap-opt]").forEach(b=>{const on=b.dataset.hapOpt===l;b.classList.toggle("on",on);b.setAttribute("aria-checked",on?"true":"false")});
+ const lab=document.getElementById("hapticLabel");if(lab)lab.textContent=HAPTIC_NAMES[l];
+}
+function setHapticLevel(l){if(!HAPTIC_LEVELS.includes(l))return;try{localStorage.setItem(HAPTIC_KEY,l)}catch(e){}renderHaptic();playHapticPreview()}
+function playHapticPreview(){
+ const demo=document.getElementById("hapDemo"),chip=document.getElementById("hapChip"),card=document.getElementById("hapCard");if(!demo||!chip||!card)return;
+ let reduce=false;try{reduce=matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){}
+ if(reduce){playHaptic();return}
+ const dx=Math.max(60,card.getBoundingClientRect().left-demo.getBoundingClientRect().left-16+card.offsetWidth/2-18);
+ chip.style.setProperty("--hd-dx",dx+"px");chip.classList.remove("fly");card.classList.remove("sf-receive");void chip.offsetWidth;chip.classList.add("fly");
+ clearTimeout(playHapticPreview._t);
+ playHapticPreview._t=setTimeout(()=>{playHaptic();card.classList.add("sf-receive");setTimeout(()=>card.classList.remove("sf-receive"),800)},640);
+}
 function renderSettings(){
+ renderHaptic();
  const s=data.settings||defaultSettings(),cfg=periodConfig(s.periodType);
  document.getElementById("settingsCurrentPeriod").textContent=s.currentPeriod<=cfg.names.length?`${s.currentPeriod}°`:"Completato";
  document.getElementById("currentPeriodLabel").textContent=s.currentPeriod<=cfg.names.length?periodLabel(s.currentPeriod):"Anno scolastico completato";
