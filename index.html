@@ -280,6 +280,11 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{fi
 .theme-seg button .e{font-size:19px}
 .theme-seg button.on{background:var(--accentSoft);color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent)}
 .theme-note{font-size:11px;color:var(--muted);margin:8px 4px 16px}
+.wd-row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:17px;padding:12px 13px;box-shadow:var(--shadow);margin-bottom:8px}
+.wd-prev{flex:none;width:58px;height:58px;border-radius:15px;background:linear-gradient(135deg,#231d4a,#14112b);border:1px solid rgba(255,255,255,.14);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#fff;font-weight:900}
+.wd-prev small{font-size:6px;letter-spacing:.06em;color:#b9b3e8;font-weight:800}.wd-prev b{font-size:19px}.wd-prev i{display:block;width:34px;height:3px;border-radius:2px;background:rgba(255,255,255,.35);margin:1.5px 0}
+.wd-txt{flex:1;min-width:0}.wd-txt b{display:block;font-size:13px;font-weight:900}.wd-txt span{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.wd-add{flex:none;background:var(--accentSoft);color:var(--accent);border-radius:12px;padding:10px 13px;font-size:12px;font-weight:900}
 .hap-seg{grid-template-columns:repeat(4,minmax(0,1fr))}
 .hap-demo{position:relative;height:76px;margin:10px 0 2px;background:var(--card);border:1px solid var(--line);border-radius:17px;box-shadow:var(--shadow);overflow:hidden;display:flex;align-items:center;justify-content:space-between;padding:0 16px}
 .hap-demo .hd-card{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:900;border-radius:13px;padding:9px 12px;background:var(--d-soft,#f7f7fa)}
@@ -487,6 +492,13 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{fi
    </div>
    <div class="hap-demo" id="hapDemo" onclick="playHapticPreview()" role="button" aria-label="Prova la vibrazione"><div class="hd-chip" id="hapChip">9</div><div style="font-size:11px;font-weight:850;color:var(--muted)">Tocca per provare</div><div class="hd-card" id="hapCard">📖 Italiano <b>9</b></div></div>
    <p class="theme-note">Si sente quando salvi un voto. La forza dipende dal motore di vibrazione del tuo telefono.</p>
+  </div>
+  <div id="widgetSection" style="display:none">
+   <div class="section-title" style="margin-top:6px"><h2>Widget</h2><span>schermata Home</span></div>
+   <div class="wd-row"><div class="wd-prev"><small>MEDIA</small><b id="wdPrevAvg">7,9</b></div><div class="wd-txt"><b>Media generale</b><span>Piccolo, 2×2. La tua media del periodo.</span></div><button type="button" class="wd-add" onclick="addWidget('overall')">Aggiungi</button></div>
+   <div class="wd-row"><div class="wd-prev"><small>MATERIE</small><i></i><i></i><i></i></div><div class="wd-txt"><b>Materie</b><span>Grande. La media di ogni materia.</span></div><button type="button" class="wd-add" onclick="addWidget('subjects')">Aggiungi</button></div>
+   <div class="wd-row"><div class="wd-prev"><small>ULTIMI</small><i></i><i></i></div><div class="wd-txt"><b>Ultimi voti</b><span>Medio. Gli ultimi voti che hai preso.</span></div><button type="button" class="wd-add" onclick="addWidget('last')">Aggiungi</button></div>
+   <p class="theme-note" id="widgetNote">Toccando un widget si apre SchoolFlow. Si aggiornano da soli quando salvi un voto.</p>
   </div>
   <div class="info-card">⚙️ <b>Periodo scolastico</b><br>Le impostazioni vengono salvate automaticamente sul dispositivo. Quando termina un periodo (es. il trimestre) non si cancella nulla: le materie restano, i voti di quel periodo vengono conservati e SchoolFlow passa al periodo successivo. Puoi rivederli quando vuoi dalla barra dei periodi in alto nella Home.</div>
   <div class="section-title"><h2>Gestione anno scolastico</h2><span id="currentPeriodLabel">—</span></div>
@@ -1205,8 +1217,37 @@ function playHapticPreview(){
  clearTimeout(playHapticPreview._t);
  playHapticPreview._t=setTimeout(()=>{playHaptic();card.classList.add("sf-receive");setTimeout(()=>card.classList.remove("sf-receive"),800)},640);
 }
+// ---- Widget Android (schermata Home): i dati vengono passati al plugin nativo SchoolFlowWidgets ----
+function widgetPlugin(){try{const c=window.Capacitor;if(c&&typeof c.isNativePlatform==="function"&&c.isNativePlatform()&&c.Plugins&&c.Plugins.SchoolFlowWidgets)return c.Plugins.SchoolFlowWidgets}catch(e){}return null}
+function widgetPayload(){
+ const subs=(data&&data.subjects)||[],all=[];
+ subs.forEach(s=>(s.grades||[]).forEach(g=>all.push({sn:s.name,v:n(g.value),d:g.date||"",w:g.weight,i:all.length})));
+ const raw=[];subs.forEach(s=>(s.grades||[]).forEach(g=>raw.push(g)));
+ const ov=average(raw);
+ const last=all.filter(g=>g.d).sort((a,b)=>a.d===b.d?b.i-a.i:(a.d<b.d?1:-1)).slice(0,6).map(g=>({s:g.sn,v:g.v,d:g.d.slice(8,10)+"/"+g.d.slice(5,7)}));
+ return {p:currentPeriodName(),o:ov,c:raw.length,s:subs.map(s=>({n:s.name,a:sAvg(s),c:(s.grades||[]).length})),l:last};
+}
+let _wdLast="",_wdTimer=null;
+function pushWidgetsSoon(){
+ const P=widgetPlugin();if(!P)return;
+ clearTimeout(_wdTimer);
+ _wdTimer=setTimeout(()=>{try{const j=JSON.stringify(widgetPayload());if(j===_wdLast)return;_wdLast=j;P.update({json:j}).catch(()=>{_wdLast=""})}catch(e){}},400);
+}
+function addWidget(type){
+ const P=widgetPlugin();if(!P){toast("I widget sono disponibili solo nell'app Android.");return}
+ try{_wdLast=JSON.stringify(widgetPayload());P.update({json:_wdLast}).catch(()=>{})}catch(e){}
+ P.requestPin({type}).then(r=>{
+  if(r&&r.supported===false)toast("Tieni premuto sulla Home, scegli Widget e cerca SchoolFlow.");
+  else if(r&&r.requested===false)toast("Non riesco ad aggiungerlo: usa Widget dalla tua Home.");
+ }).catch(()=>toast("Tieni premuto sulla Home, scegli Widget e cerca SchoolFlow."));
+}
+function renderWidgetSection(){
+ const sec=document.getElementById("widgetSection");if(!sec)return;
+ sec.style.display=widgetPlugin()?"block":"none";
+ const a=document.getElementById("wdPrevAvg");if(a){try{const v=average((data.subjects||[]).flatMap(s=>s.grades||[]));a.textContent=v==null?"—":f(v)}catch(e){}}
+}
 function renderSettings(){
- renderHaptic();
+ renderHaptic();renderWidgetSection();
  const s=data.settings||defaultSettings(),cfg=periodConfig(s.periodType);
  document.getElementById("settingsCurrentPeriod").textContent=s.currentPeriod<=cfg.names.length?`${s.currentPeriod}°`:"Completato";
  document.getElementById("currentPeriodLabel").textContent=s.currentPeriod<=cfg.names.length?periodLabel(s.currentPeriod):"Anno scolastico completato";
@@ -1611,6 +1652,7 @@ function runSplash(){
 function renderAll(){
  checkAutomaticPeriod();
  renderPeriodBar();renderHome();renderSubjects();renderAverages();renderGrades();renderStatistics();renderSettings();renderNewYear();
+ pushWidgetsSoon();
 }
 function openSubjectModal(subjectId=null){
  editing=subjectId;
