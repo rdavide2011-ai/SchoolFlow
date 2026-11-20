@@ -155,6 +155,23 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
 .pg-tot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:13px 14px;border-radius:15px;background:rgba(255,255,255,.07)}
 .pg-tot b{font-size:11px;letter-spacing:1px;color:#B9B3E8}.pg-tot strong{font-size:30px;font-weight:950;letter-spacing:-1px}
 .pg-note{font-size:11px;color:#B9B3E8;margin-top:11px;line-height:1.45}
+/* animazioni d'ingresso e uscita (semplici, rispettano "riduci animazioni") */
+@keyframes sfIn{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes sfBar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes sfSheetOut{to{transform:translateY(70px);opacity:.2}}
+@keyframes sfFadeOut{to{opacity:0}}
+.page.enter .subject:not(.sf-receive),.page.enter .grade-card,.page.enter .quick,.page.enter .rank-row,.page.enter .stat-card,.page.enter .wd-row,.page.enter .backup-btn{animation:sfIn .4s cubic-bezier(.2,.8,.25,1) backwards}
+.page.enter .subjects>*:nth-child(2),.page.enter .quick-grid>*:nth-child(2),.page.enter .list>*:nth-child(2),.page.enter .ranking>*:nth-child(2){animation-delay:.04s}
+.page.enter .subjects>*:nth-child(3),.page.enter .quick-grid>*:nth-child(3),.page.enter .list>*:nth-child(3),.page.enter .ranking>*:nth-child(3){animation-delay:.08s}
+.page.enter .subjects>*:nth-child(4),.page.enter .quick-grid>*:nth-child(4),.page.enter .list>*:nth-child(4),.page.enter .ranking>*:nth-child(4){animation-delay:.12s}
+.page.enter .subjects>*:nth-child(5),.page.enter .quick-grid>*:nth-child(5),.page.enter .list>*:nth-child(5),.page.enter .ranking>*:nth-child(5){animation-delay:.16s}
+.page.enter .subjects>*:nth-child(6),.page.enter .quick-grid>*:nth-child(6),.page.enter .list>*:nth-child(6),.page.enter .ranking>*:nth-child(6){animation-delay:.2s}
+.page.enter .subjects>*:nth-child(n+7),.page.enter .quick-grid>*:nth-child(n+7),.page.enter .list>*:nth-child(n+7),.page.enter .ranking>*:nth-child(n+7){animation-delay:.24s}
+.page.enter .rank-bar i{transform-origin:left center;animation:sfBar .7s .15s cubic-bezier(.2,.8,.25,1) backwards}
+.subject,.quick,.grade-card,.rank-row,.backup-btn,.wd-row{transition:transform .14s ease}
+.subject:active,.quick:active,.grade-card:active,.rank-row:active,.backup-btn:active{transform:scale(.975)}
+.modal-wrap.closing{animation:sfFadeOut .2s ease forwards;pointer-events:none}.modal-wrap.closing .sheet{animation:sfSheetOut .2s ease forwards}
+@media (prefers-reduced-motion:reduce){.page.enter *{animation:none!important}.modal-wrap.closing,.modal-wrap.closing .sheet{animation:none}.subject:active,.quick:active,.grade-card:active,.rank-row:active,.backup-btn:active{transform:none}}
 .sf-chip{position:fixed;left:0;top:0;z-index:960;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:var(--card);border:3px solid currentColor;font-weight:900;font-size:22px;pointer-events:none;box-shadow:0 10px 26px rgba(0,0,0,.3);will-change:transform,opacity}
 .sf-receive{animation:sfReceive .7s cubic-bezier(.2,.9,.3,1.3)}
 @keyframes sfReceive{0%{box-shadow:0 0 0 0 var(--sfc)}40%{transform:scale(1.04)}100%{transform:none;box-shadow:0 0 0 18px transparent}}
@@ -965,6 +982,7 @@ function showPage(page,button){
  document.querySelectorAll(".bottom-nav button").forEach(x=>x.classList.remove("active"));
  if(button)button.classList.add("active");
  document.querySelectorAll(".bottom-nav button").forEach(x=>{if(x.getAttribute("onclick")?.includes("'"+page+"'"))x.classList.add("active")});
+ const pg=document.getElementById(page);pg.classList.remove("enter");void pg.offsetWidth;pg.classList.add("enter");clearTimeout(pg._en);pg._en=setTimeout(()=>pg.classList.remove("enter"),900);
  renderAll();window.scrollTo({top:0,behavior:"smooth"});
 }
 function subjectCard(s){
@@ -984,7 +1002,7 @@ function setHomeSubjectFilter(filter){
 function renderHome(){
  const gs=viewGrades(),a=average(gs);
  document.getElementById("homeHello").textContent="PANORAMICA · "+viewPeriodName().toUpperCase();
- document.getElementById("homeAvg").textContent=a==null?"—":f(a);
+ animateAvg(document.getElementById("homeAvg"),a);
  document.getElementById("homeAvgInfo").textContent=a==null?"Aggiungi i tuoi primi voti":a>=6?"Stai andando bene":"Puoi ancora recuperare";
  document.getElementById("homeAvgPill").textContent=`${gs.length} ${gs.length===1?"voto":"voti"}`;
  const allSubjects=viewSubjects();
@@ -1924,7 +1942,24 @@ function sharePagella(){
   function dl(){const u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download="pagella-schoolflow.png";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast("Immagine salvata")}
  },"image/png");
 }
-function closeModal(id){document.getElementById(id).classList.remove("show")}
+// il numero della media generale "scorre" fino al nuovo valore
+function animateAvg(el,v){
+ if(!el)return;
+ if(v==null||!Number.isFinite(v)){el.textContent="—";el._v=null;return}
+ let reduce=false;try{reduce=matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){}
+ const from=Number.isFinite(el._v)?el._v:0;el._v=v;clearTimeout(el._t);cancelAnimationFrame(el._r);
+ if(reduce||Math.abs(v-from)<0.005){el.textContent=f(v);return}
+ const t0=performance.now(),D=600;
+ const step=now=>{const u=Math.min(1,(now-t0)/D),e=1-Math.pow(1-u,3);el.textContent=f(from+(v-from)*e);if(u<1)el._r=requestAnimationFrame(step);else el.textContent=f(v)};
+ el._r=requestAnimationFrame(step);
+}
+function closeModal(id){
+ const m=document.getElementById(id);if(!m||!m.classList.contains("show"))return;
+ let reduce=false;try{reduce=matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){}
+ if(reduce){m.classList.remove("show");return}
+ m.classList.add("closing");clearTimeout(m._ct);
+ m._ct=setTimeout(()=>{if(m.classList.contains("closing"))m.classList.remove("show","closing")},200);
+}
 document.querySelectorAll(".modal-wrap").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)m.classList.remove("show")}));
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(window.tt);window.tt=setTimeout(()=>t.classList.remove("show"),2200)}
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
