@@ -140,6 +140,21 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
 .ranking{display:grid;gap:8px;margin-top:10px}.rank-row{display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--line);border-radius:15px;padding:11px 12px;box-shadow:var(--shadow)}.rank-num{width:22px;font-size:10px;font-weight:900;color:var(--muted)}.rank-name{flex:1;font-size:12px;font-weight:850;min-width:0}.rank-bar{width:75px;height:6px;background:var(--d-soft,#eef0f4);border-radius:99px;overflow:hidden}.rank-bar i{display:block;height:100%;background:var(--accent);border-radius:99px}.rank-value{width:42px;text-align:right;font-size:13px;font-weight:950}
 .bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--d-nav,rgba(255,255,255,.94));backdrop-filter:blur(20px);border-top:1px solid var(--line);padding:7px 10px calc(7px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(6,1fr)}
 .bottom-nav button{background:none;color:var(--d-muted,#9096a1);border-radius:14px;padding:7px 2px;font-size:9px;font-weight:800}.bottom-nav button.active{background:var(--accentSoft);color:var(--accent)}.bottom-nav .ico{display:block;font-size:20px;line-height:21px;margin-bottom:2px}
+.pg-card{border-radius:20px;padding:18px 16px 14px;color:#fff;background:linear-gradient(150deg,#2A2257,#14112B);border:1px solid rgba(255,255,255,.14)}
+.pg-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.pg-kick{font-size:10px;font-weight:900;letter-spacing:1.4px;color:#B9B3E8}
+.pg-title{font-size:24px;font-weight:950;letter-spacing:-.8px;margin-top:3px}
+.pg-sub{font-size:12px;color:#B9B3E8;margin-top:3px;font-weight:700}
+.pg-tag{flex:none;font-size:9px;font-weight:900;letter-spacing:1px;border-radius:99px;padding:6px 10px;background:rgba(240,165,44,.18);color:#f5b443;border:1px solid rgba(245,180,67,.45)}
+.pg-tag.fin{background:rgba(63,207,142,.15);color:#3fcf8e;border-color:rgba(63,207,142,.45)}
+.pg-head{display:flex;justify-content:space-between;font-size:9px;font-weight:900;letter-spacing:1px;color:#8f89c6;margin:16px 2px 6px}
+.pg-row{display:flex;align-items:center;gap:10px;padding:9px 2px;border-top:1px solid rgba(255,255,255,.09)}
+.pg-row .nm{flex:1;min-width:0;font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pg-row .av{width:48px;text-align:right;font-size:12px;color:#B9B3E8;font-weight:700}
+.pg-row .gr{width:34px;text-align:right;font-size:20px;font-weight:950}
+.pg-tot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:13px 14px;border-radius:15px;background:rgba(255,255,255,.07)}
+.pg-tot b{font-size:11px;letter-spacing:1px;color:#B9B3E8}.pg-tot strong{font-size:30px;font-weight:950;letter-spacing:-1px}
+.pg-note{font-size:11px;color:#B9B3E8;margin-top:11px;line-height:1.45}
 .sf-chip{position:fixed;left:0;top:0;z-index:960;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:var(--card);border:3px solid currentColor;font-weight:900;font-size:22px;pointer-events:none;box-shadow:0 10px 26px rgba(0,0,0,.3);will-change:transform,opacity}
 .sf-receive{animation:sfReceive .7s cubic-bezier(.2,.9,.3,1.3)}
 @keyframes sfReceive{0%{box-shadow:0 0 0 0 var(--sfc)}40%{transform:scale(1.04)}100%{transform:none;box-shadow:0 0 0 18px transparent}}
@@ -383,6 +398,7 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{fi
  <div class="section-title"><h2>Azioni rapide</h2></div>
  <div class="quick-grid">
   <button class="quick quick-wide" onclick="openCalcModal()"><div class="qicon">🎯</div><b>Quanto mi serve?</b><span>Scopri che voto ti serve per arrivare alla media che vuoi</span></button>
+  <button class="quick quick-wide" onclick="openPagella()"><div class="qicon">📄</div><b>Crea la mia pagella</b><span>Guarda la pagella con i voti che hai ora, anche prima della fine del periodo</span></button>
   <button class="quick" onclick="openGradeModal()"><div class="qicon">✏️</div><b>Aggiungi voto</b><span>Registra una nuova valutazione</span></button>
   <button class="quick" onclick="openSubjectModal()"><div class="qicon">📚</div><b>Nuova materia</b><span>Aggiungi una materia</span></button>
   <button class="quick" onclick="showPage('averages')"><div class="qicon">📊</div><b>Le mie medie</b><span>Guarda il rendimento</span></button>
@@ -563,6 +579,13 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{fi
    <div id="gradePreview" class="preview">Tocca un voto qui sopra.</div>
   </div></div>
   <div class="sheet-foot"><button class="cancel" onclick="closeModal('gradeModal')">Annulla</button><button id="gradeSaveButton" class="save" onclick="saveGrade()">Aggiungi voto</button></div>
+ </div>
+</div>
+<div id="pagellaModal" class="modal-wrap">
+ <div class="sheet">
+  <div class="handle"></div><div class="sheet-head"><h3>📄 La mia pagella</h3><button class="close" onclick="closeModal('pagellaModal')">×</button></div>
+  <div class="sheet-body"><div id="pagellaBody"></div></div>
+  <div class="sheet-foot"><button class="cancel" onclick="closeModal('pagellaModal')">Chiudi</button><button id="pagellaShare" class="save" onclick="sharePagella()">Condividi immagine</button></div>
  </div>
 </div>
 <div id="calcModal" class="modal-wrap">
@@ -1842,6 +1865,64 @@ function undoGradeDelete(){
  renderAll();
  if(document.getElementById("subjectDetail").classList.contains("active")&&currentSubjectId===item.sid)renderSubjectDetail();
  toast("Voto ripristinato.");
+}
+// ---- Pagella: anteprima (o finale) del periodo che stai guardando, con immagine da condividere ----
+function pgRound(a){return Math.floor(a+0.5+1e-9)}
+function pgColor(v){return v>=6?"#3fcf8e":v>=5?"#f5b443":"#ff6b78"}
+function pagellaData(){
+ const subs=viewSubjects(),rows=[];
+ subs.forEach(s=>{const a=sAvg(s);if(a!=null)rows.push({icon:s.icon,name:s.name,avg:a,gr:pgRound(a),cnt:(s.grades||[]).length})});
+ const empty=subs.filter(s=>!(s.grades||[]).length).length;
+ const all=average(grades(subs));
+ const s=data.settings||defaultSettings();
+ return {rows,empty,overall:all,insuff:rows.filter(r=>r.gr<6).length,period:viewPeriodName(),year:s.schoolYear||"",archived:isArchiveView(),total:grades(subs).length};
+}
+function openPagella(){
+ const d=pagellaData();
+ if(!d.rows.length)return toast("Aggiungi prima qualche voto.");
+ const body=document.getElementById("pagellaBody");
+ body.innerHTML=`<div class="pg-card"><div class="pg-top"><div><div class="pg-kick">PAGELLA</div><div class="pg-title">${esc(d.period)}</div><div class="pg-sub">Anno scolastico ${esc(d.year)}</div></div><div class="pg-tag${d.archived?" fin":""}">${d.archived?"PERIODO CONCLUSO":"ANTEPRIMA"}</div></div>
+ <div class="pg-head"><span>MATERIA</span><span>MEDIA · VOTO</span></div>
+ ${d.rows.map(r=>`<div class="pg-row"><span>${esc(r.icon)}</span><span class="nm">${esc(r.name)}</span><span class="av">${f(r.avg)}</span><span class="gr" style="color:${pgColor(r.gr)}">${r.gr}</span></div>`).join("")}
+ <div class="pg-tot"><b>MEDIA GENERALE</b><strong style="color:${pgColor(d.overall)}">${f(d.overall)}</strong></div>
+ <div class="pg-note">${d.insuff?`Materie sotto il 6: ${d.insuff}. `:"Nessuna materia sotto il 6. "}${d.archived?"":"È un'anteprima: cambia ogni volta che aggiungi un voto. "}Il voto in pagella è la media arrotondata${d.empty?`; ${d.empty} ${d.empty===1?"materia senza voti non è inclusa":"materie senza voti non sono incluse"}`:""}.</div></div>`;
+ document.getElementById("pagellaModal").classList.add("show");
+}
+function pagellaCanvas(){
+ const d=pagellaData(),W=1080,rowH=96,H=330+d.rows.length*rowH+330;
+ const c=document.createElement("canvas");c.width=W;c.height=H;const x=c.getContext("2d");
+ const g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,"#2A2257");g.addColorStop(1,"#14112B");x.fillStyle=g;x.fillRect(0,0,W,H);
+ const FF="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif";
+ x.textBaseline="alphabetic";x.fillStyle="#B9B3E8";x.font="800 30px "+FF;x.fillText("PAGELLA",80,120);
+ x.fillStyle="#fff";x.font="900 84px "+FF;x.fillText(d.period,80,215);
+ x.fillStyle="#B9B3E8";x.font="700 34px "+FF;x.fillText("Anno scolastico "+d.year,80,272);
+ const tag=d.archived?"PERIODO CONCLUSO":"ANTEPRIMA";x.font="900 26px "+FF;const tw=x.measureText(tag).width+56;
+ x.fillStyle=d.archived?"rgba(63,207,142,.16)":"rgba(245,180,67,.18)";x.beginPath();x.roundRect(W-80-tw,86,tw,56,28);x.fill();
+ x.fillStyle=d.archived?"#3fcf8e":"#f5b443";x.textAlign="center";x.fillText(tag,W-80-tw/2,124);x.textAlign="left";
+ let y=330;x.strokeStyle="rgba(255,255,255,.12)";x.lineWidth=2;
+ d.rows.forEach(r=>{x.beginPath();x.moveTo(80,y-40);x.lineTo(W-80,y-40);x.stroke();
+  x.font="46px "+FF;x.fillStyle="#fff";x.fillText(r.icon,80,y+14);
+  x.font="800 40px "+FF;let nm=r.name;while(x.measureText(nm).width>470&&nm.length>3)nm=nm.slice(0,-2);if(nm!==r.name)nm=nm.trimEnd()+"…";x.fillText(nm,160,y+14);
+  x.textAlign="right";x.font="700 34px "+FF;x.fillStyle="#B9B3E8";x.fillText(f(r.avg),W-200,y+12);
+  x.font="900 56px "+FF;x.fillStyle=pgColor(r.gr);x.fillText(String(r.gr),W-80,y+18);x.textAlign="left";y+=rowH});
+ y+=10;x.fillStyle="rgba(255,255,255,.08)";x.beginPath();x.roundRect(80,y,W-160,150,34);x.fill();
+ x.fillStyle="#B9B3E8";x.font="800 30px "+FF;x.fillText("MEDIA GENERALE",120,y+88);
+ x.textAlign="right";x.fillStyle=pgColor(d.overall);x.font="950 84px "+FF;x.fillText(f(d.overall),W-120,y+102);x.textAlign="left";
+ y+=210;x.fillStyle="#8f89c6";x.font="600 28px "+FF;
+ x.fillText(d.archived?"Voto in pagella = media arrotondata":"Anteprima · cambia quando aggiungi un voto",80,y);
+ x.textAlign="right";x.font="800 30px "+FF;x.fillStyle="#B9B3E8";x.fillText("SchoolFlow",W-80,y);x.textAlign="left";
+ return c;
+}
+function sharePagella(){
+ let c;try{c=pagellaCanvas()}catch(e){return toast("Non riesco a creare l'immagine.")}
+ c.toBlob(b=>{
+  if(!b)return toast("Non riesco a creare l'immagine.");
+  const file=new File([b],"pagella-schoolflow.png",{type:"image/png"});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+   navigator.share({files:[file],title:"La mia pagella"}).catch(e=>{if(e&&e.name!=="AbortError")dl()});
+  }else dl();
+  function dl(){const u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download="pagella-schoolflow.png";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast("Immagine salvata")}
+ },"image/png");
 }
 function closeModal(id){document.getElementById(id).classList.remove("show")}
 document.querySelectorAll(".modal-wrap").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)m.classList.remove("show")}));
