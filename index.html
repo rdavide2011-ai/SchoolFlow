@@ -810,7 +810,12 @@ function sfConfirm(label,colorClass,sid,msg){
   const target=scard||gcard;
   const color=colorClass==="good"?"var(--green)":colorClass==="mid"?"var(--orange)":"var(--red)";
   const land=()=>{
-   try{if(navigator.vibrate)navigator.vibrate(30)}catch(e){}
+   // Android: vibrazione nativa (plugin Haptics dell'app); nel browser Android: Vibration API. iPhone/web iOS: nessuna vibrazione possibile.
+   try{
+    const cap=window.Capacitor,H=cap&&typeof cap.isNativePlatform==="function"&&cap.isNativePlatform()&&cap.Plugins&&cap.Plugins.Haptics;
+    if(H&&typeof H.notification==="function")H.notification({type:"SUCCESS"}).catch(()=>{});
+    else if(navigator.vibrate)navigator.vibrate([25,40,45]);
+   }catch(e){}
    if(!target||reduce){if(msg)toast(msg);return}
    let tg=target;
    if(!document.body.contains(tg)){const q=document.querySelector(`.subject[onclick^="openSubjectDetail('${sid}'"]`)||document.querySelector(`.subject-manage-top[onclick^="openSubjectDetail('${sid}'"]`);tg=q&&(q.closest(".subject-manage")||q)}
