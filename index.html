@@ -372,6 +372,30 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{fi
 /* Undo voto: riusa la notifica di ripristino della materia, separando i due avvisi */
 .subject-undo.show + .grade-undo.show{bottom:calc(148px + env(safe-area-inset-bottom))}
 @media(min-width:700px){.subject-undo.show + .grade-undo.show{bottom:90px}}
+/* tutorial guidato */
+.tut-ask{position:fixed;inset:0;z-index:920;background:rgba(13,14,18,.58);display:flex;align-items:center;justify-content:center;padding:22px;animation:tutFade .25s ease}
+.tut-ask[hidden],.tour[hidden]{display:none}
+.tut-box{background:var(--card,#fff);color:var(--text,#17191f);border-radius:24px;padding:26px 22px 20px;max-width:340px;width:100%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.35);animation:tutPop .32s cubic-bezier(.2,.9,.3,1.2)}
+.tut-box .tut-ico{font-size:42px;margin-bottom:8px}
+.tut-box h3{margin:0 0 8px;font-size:21px}
+.tut-box p{margin:0 0 18px;font-size:15px;line-height:1.45;opacity:.75}
+.tut-btns{display:flex;gap:10px}
+.tut-btns button{flex:1;border:0;border-radius:14px;padding:14px 10px;font:inherit;font-weight:700;font-size:15px;cursor:pointer;background:rgba(127,127,127,.16);color:inherit}
+.tut-btns button.primary{background:#6d4cf5;color:#fff}
+.tour{position:fixed;inset:0;z-index:930}
+.tour-hole{position:fixed;border-radius:16px;box-shadow:0 0 0 9999px rgba(13,14,18,.66),0 0 0 3px #8b7cf6;transition:all .32s cubic-bezier(.3,.8,.3,1);pointer-events:none}
+.tour-card{position:fixed;left:16px;right:16px;max-width:360px;margin:0 auto;background:var(--card,#fff);color:var(--text,#17191f);border-radius:20px;padding:18px 18px 14px;box-shadow:0 18px 50px rgba(0,0,0,.4);transition:top .32s cubic-bezier(.3,.8,.3,1)}
+.tour-card h3{margin:0 0 6px;font-size:18px}
+.tour-card p{margin:0 0 14px;font-size:15px;line-height:1.45;opacity:.78}
+.tour-foot{display:flex;align-items:center;gap:10px}
+.tour-dots{flex:1;display:flex;gap:5px}
+.tour-dots i{width:7px;height:7px;border-radius:50%;background:rgba(127,127,127,.35)}
+.tour-dots i.on{background:#6d4cf5;width:18px;border-radius:4px}
+.tour-foot button{border:0;border-radius:12px;padding:10px 14px;font:inherit;font-weight:700;font-size:14px;cursor:pointer;background:rgba(127,127,127,.16);color:inherit}
+.tour-foot button.primary{background:#6d4cf5;color:#fff}
+@keyframes tutFade{from{opacity:0}to{opacity:1}}
+@keyframes tutPop{from{opacity:0;transform:scale(.9) translateY(14px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.tut-ask,.tut-box{animation:none}.tour-hole,.tour-card{transition:none}}
 </style>
 </head>
 <body>
@@ -550,6 +574,8 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{fi
   <div class="newyear-card"><div><b>🎓 Nuovo anno scolastico</b><span id="newYearInfo">A fine anno archivia i voti e riparti dal primo periodo.</span></div><button class="ny-btn" onclick="startNewSchoolYear()">Inizia l'anno <span id="nextYearLabel">2027/28</span></button></div>
   <div class="section-title"><h2>Storico periodi</h2><span>solo lettura</span></div>
   <div id="historyList" class="list"></div>
+  <div class="section-title"><h2>Tutorial</h2><span>giro guidato</span></div>
+  <div class="backup-row"><button class="backup-btn" onclick="startTour()">▶︎ Rivedi il tutorial</button></div>
   <div class="section-title"><h2>Backup</h2><span id="lastBackupLabel">mai fatto</span></div>
   <div class="info-card">💾 <b>Salva i tuoi voti in un file.</b> Il backup contiene materie, voti, periodi archiviati e impostazioni. Importandolo su un altro telefono le materie già presenti vengono unite (nessun doppione) e quelle mancanti vengono aggiunte.</div>
   <div class="backup-row">
@@ -629,6 +655,8 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{fi
   <div class="sheet-foot"><button class="cancel" onclick="closeModal('historyModal')">Chiudi</button></div>
  </div>
 </div>
+<div id="tutAsk" class="tut-ask" hidden role="dialog" aria-modal="true" aria-labelledby="tutAskT"><div class="tut-box"><div class="tut-ico">👋</div><h3 id="tutAskT">Vuoi fare il tutorial?</h3><p>Ti mostro in un minuto come usare SchoolFlow. Puoi saltarlo e rivederlo quando vuoi da Impostazioni.</p><div class="tut-btns"><button onclick="tutAnswer(false)">Salta</button><button class="primary" onclick="tutAnswer(true)">Inizia</button></div></div></div>
+<div id="tour" class="tour" hidden><div id="tourHole" class="tour-hole"></div><div id="tourCard" class="tour-card" role="dialog" aria-live="polite"></div></div>
 <div id="onboarding" class="onb" hidden><div class="onb-wrap" id="onbWrap"></div></div>
 <div id="toast" class="toast"></div>
 <div id="storageRescue" hidden role="alertdialog" aria-modal="true" style="position:fixed;inset:0;z-index:950;background:var(--bg);color:var(--text);padding:35px 20px;overflow:auto">
@@ -1590,6 +1618,7 @@ function onbFinish(skip){
  if(!save()){data=previous;return}
  closeOnboarding();viewPeriodId=null;showPage("home");
  toast(data.subjects.length?"Tutto pronto! Tocca ＋ per aggiungere il primo voto.":"Tutto pronto! Aggiungi le tue materie da Materie.");
+ setTimeout(askTutorial,700);
 }
 function renderOnb(){
  const w=document.getElementById("onbWrap");if(!w||!onb)return;
@@ -1963,6 +1992,43 @@ function closeModal(id){
 document.querySelectorAll(".modal-wrap").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)m.classList.remove("show")}));
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(window.tt);window.tt=setTimeout(()=>t.classList.remove("show"),2200)}
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+// tutorial guidato
+const TUT_KEY="schoolflow_tutorial_v1";
+const TOUR=[
+ {page:"home",sel:".big-average",t:"La tua media generale",d:"Qui vedi la media di tutti i voti. Si aggiorna da sola ogni volta che ne aggiungi uno."},
+ {page:"home",sel:'.quick[onclick="openGradeModal()"]',t:"Aggiungi un voto",d:"Scegli la materia, il voto e, se vuoi, il peso in percentuale per la media ponderata."},
+ {page:"home",sel:'.quick[onclick="openPagella()"]',t:"La tua pagella",d:"Guarda la pagella con i voti di adesso, anche prima della fine del periodo, e condividila come immagine."},
+ {page:"subjects",nav:2,t:"Materie",d:"Aggiungi, modifica o elimina le materie e inserisci i voti di ognuna."},
+ {page:"averages",nav:3,t:"Medie",d:"La media di ogni materia, calcolata con il peso dei voti."},
+ {page:"statistics",nav:4,t:"Statistiche",d:"Grafici per capire come stai andando nel tempo."},
+ {page:"grades",nav:5,t:"Voti",d:"Tutti i tuoi voti in un elenco, con la ricerca per trovarli subito."},
+ {page:"settings",nav:6,t:"Impostazioni",d:"Periodi scolastici, tema, backup dei dati e, su Android, vibrazione e widget."}
+];
+let tour=null;
+function tutDone(){try{localStorage.setItem(TUT_KEY,"1")}catch(e){}}
+function askTutorial(){let d=false;try{d=localStorage.getItem(TUT_KEY)==="1"}catch(e){}if(d)return;document.getElementById("tutAsk").hidden=false}
+function tutAnswer(go){document.getElementById("tutAsk").hidden=true;tutDone();if(go)startTour()}
+function startTour(){tour={i:0};document.getElementById("tour").hidden=false;renderTour()}
+function endTour(done){document.getElementById("tour").hidden=true;tour=null;tutDone();showPage("home",document.querySelector(".bottom-nav button"));window.scrollTo(0,0);if(done)toast("Tutorial finito. Lo rivedi da Impostazioni.")}
+function tourNext(){if(tour.i>=TOUR.length-1)return endTour(true);tour.i++;renderTour()}
+function tourPrev(){if(tour.i>0){tour.i--;renderTour()}}
+function renderTour(){
+ if(!tour)return;const st=TOUR[tour.i],navBtn=st.nav?document.querySelector(`.bottom-nav button:nth-child(${st.nav})`):null;
+ showPage(st.page,navBtn||document.querySelector(".bottom-nav button"));
+ const el=navBtn||document.querySelector(st.sel);
+ setTimeout(()=>{if(!tour)return;
+  if(!navBtn&&el)el.scrollIntoView({block:"center"});
+  requestAnimationFrame(()=>{if(!tour)return;
+   const r=el?el.getBoundingClientRect():{left:20,top:120,width:200,height:60},pad=6,h=document.getElementById("tourHole"),c=document.getElementById("tourCard");
+   h.style.left=(r.left-pad)+"px";h.style.top=(r.top-pad)+"px";h.style.width=(r.width+pad*2)+"px";h.style.height=(r.height+pad*2)+"px";
+   const last=tour.i===TOUR.length-1;
+   c.innerHTML=`<h3>${esc(st.t)}</h3><p>${esc(st.d)}</p><div class="tour-foot"><div class="tour-dots">${TOUR.map((_,k)=>`<i class="${k===tour.i?"on":""}"></i>`).join("")}</div>${tour.i?'<button onclick="tourPrev()">Indietro</button>':'<button onclick="endTour(false)">Salta</button>'}<button class="primary" onclick="tourNext()">${last?"Fine":"Avanti"}</button></div>`;
+   const ch=c.offsetHeight,below=r.top+r.height/2<innerHeight/2;
+   c.style.top=Math.max(12,Math.min(innerHeight-ch-12,below?r.top+r.height+pad+14:r.top-pad-ch-14))+"px";
+  });
+ },60);
+}
+window.addEventListener("resize",()=>{if(tour)renderTour()});
 applyTheme();
 // Non mostrare onboarding né archiviare voti prima della lettura di localStorage + Android.
 recoverStorageBeforeStart().catch(e=>{
