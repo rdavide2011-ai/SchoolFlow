@@ -130,7 +130,7 @@ jobs:
             widgets:['pushWidgetsSoon','addWidget','widgetSection','SchoolFlowWidgets'],
             pagella:['openPagella','sharePagella','pagellaCanvas'],
             animazioni:['animateAvg','sfIn','sfSheetOut'],
-    tutorial:['startTour','askTutorial','tutAnswer']
+            tutorial:['startTour','askTutorial','tutAnswer']
           };
           for(const [feature,markers] of Object.entries(tests)){
             for(const marker of markers){
