@@ -1294,6 +1294,23 @@ function playHaptic(level){
   }else if(navigator.vibrate){navigator.vibrate(level==="light"?[15]:level==="strong"?[70,40,110]:[25,40,45])}
  }catch(e){}
 }
+function tapHaptic(kind){
+ const l=getHapticLevel();if(l==="off"||!hapticSupported())return;
+ try{
+  if(hapticNative()){const H=window.Capacitor.Plugins.Haptics,ok=()=>{};
+   if(kind==="warn")H.notification({type:"WARNING"}).catch(ok);
+   else if(kind==="ok")H.notification({type:"SUCCESS"}).catch(ok);
+   else H.impact({style:l==="strong"?"MEDIUM":"LIGHT"}).catch(ok);
+  }else if(navigator.vibrate){navigator.vibrate(kind==="warn"?[30,50,30]:kind==="ok"?[25,40,45]:l==="strong"?20:10)}
+ }catch(e){}
+}
+document.addEventListener("click",ev=>{
+ const el=ev.target&&ev.target.closest?ev.target.closest("button,[onclick],[role=button],[role=radio]"):null;
+ if(!el||el.disabled||el.getAttribute("aria-disabled")==="true")return;
+ const oc=el.getAttribute("onclick")||"";
+ if(/^(playHapticPreview|setHapticLevel|saveGrade)/.test(oc))return;
+ tapHaptic(/^(deleteGrade|deleteSubject|deleteGradeFromDetail|startNewSchoolYear)/.test(oc)?"warn":/^(saveSubject|onbFinish|exportBackup|shareApp|sharePagella|shareStory|addWidget)/.test(oc)?"ok":"tap");
+},true);
 function renderHaptic(){
  const sec=document.getElementById("hapticSection");if(!sec)return;
  sec.style.display=hapticSupported()?"block":"none";
@@ -1949,7 +1966,10 @@ function pagellaData(){
  const s=data.settings||defaultSettings();
  return {rows,empty,overall:all,insuff:rows.filter(r=>r.gr<6).length,period:viewPeriodName(),year:s.schoolYear||"",archived:isArchiveView(),total:grades(subs).length};
 }
-const APP_URL="https://school-flow-eight.vercel.app",APP_HOST="school-flow-eight.vercel.app";
+const APP_URL="https://school-flow-eight.vercel.app",APP_HOST="school-flow-eight.vercel.app",PLAY_URL="https://play.google.com/store/apps/details?id=com.rivapps.schoolflow";
+function isNativeApp(){try{const c=window.Capacitor;return !!(c&&typeof c.isNativePlatform==="function"&&c.isNativePlatform())}catch(e){return false}}
+function shareLink(){return isNativeApp()?PLAY_URL:APP_URL}
+function brandHost(){return isNativeApp()?"":APP_HOST}
 const PGT={
  viola:{n:"Viola",b:["#2A2257","#14112B"],ink:"#fff",sub:"#B9B3E8",mute:"#8f89c6",line:"rgba(255,255,255,.12)",box:"rgba(255,255,255,.08)",ok:"#3fcf8e",mid:"#f5b443",bad:"#ff6b78",sw:"linear-gradient(135deg,#2A2257,#14112B)"},
  chiaro:{n:"Chiaro",b:["#FFFFFF","#E9ECF6"],ink:"#17191f",sub:"#5a5f78",mute:"#8a8fa6",line:"rgba(23,25,31,.12)",box:"rgba(109,76,245,.09)",ok:"#0f9d63",mid:"#c77d06",bad:"#d93247",sw:"linear-gradient(135deg,#ffffff,#d9def0)"},
@@ -1966,7 +1986,7 @@ function renderPagella(){
  ${d.rows.map(r=>`<div class="pg-row"><span>${esc(r.icon)}</span><span class="nm">${esc(r.name)}</span><span class="av">${f(r.avg)}</span><span class="gr" style="color:${pgColor(r.gr,k)}">${r.gr}</span></div>`).join("")}
  <div class="pg-tot"><b>MEDIA GENERALE</b><strong style="color:${pgColor(d.overall,k)}">${f(d.overall)}</strong></div>
  <div class="pg-note">${d.insuff?`Materie sotto il 6: ${d.insuff}. `:"Nessuna materia sotto il 6. "}${d.archived?"":"È un'anteprima: cambia ogni volta che aggiungi un voto. "}Il voto in pagella è la media arrotondata${d.empty?`; ${d.empty} ${d.empty===1?"materia senza voti non è inclusa":"materie senza voti non sono incluse"}`:""}.</div>
- <div class="pg-brand">Fatta con SchoolFlow · ${APP_HOST}</div></div>
+ <div class="pg-brand">Fatta con SchoolFlow${brandHost()?" · "+brandHost():""}</div></div>
  <button type="button" class="pg-story" onclick="shareStory()">📱 Card per le storie</button>`;
 }
 function openPagella(){
@@ -2001,7 +2021,7 @@ function pagellaCanvas(k){
  x.fillText(d.archived?"Voto in pagella = media arrotondata":"Anteprima · cambia quando aggiungi un voto",80,y);
  x.strokeStyle=T.line;x.beginPath();x.moveTo(80,y+42);x.lineTo(W-80,y+42);x.stroke();
  x.fillStyle=T.ink;x.font="900 46px "+FF;x.fillText("SchoolFlow",80,y+112);
- x.textAlign="right";x.fillStyle=T.sub;x.font="700 30px "+FF;x.fillText(APP_HOST,W-80,y+110);x.textAlign="left";
+ if(brandHost()){x.textAlign="right";x.fillStyle=T.sub;x.font="700 30px "+FF;x.fillText(brandHost(),W-80,y+110);x.textAlign="left"}
  return c;
 }
 function storyCanvas(k){
@@ -2023,9 +2043,9 @@ function storyCanvas(k){
  }
  x.textAlign="center";x.fillStyle=T.ink;x.font="950 90px "+FF;x.fillText("SchoolFlow",W/2,1690);
  x.fillStyle=T.sub;x.font="700 38px "+FF;x.fillText("I tuoi voti, sempre sotto controllo",W/2,1752);
- x.font="800 40px "+FF;const hw=x.measureText(APP_HOST).width+90;
+ if(brandHost()){x.font="800 40px "+FF;const hw=x.measureText(brandHost()).width+90;
  x.fillStyle=T.box;x.beginPath();x.roundRect((W-hw)/2,1786,hw,88,44);x.fill();
- x.fillStyle=T.ink;x.fillText(APP_HOST,W/2,1844);x.textAlign="left";
+ x.fillStyle=T.ink;x.fillText(brandHost(),W/2,1844)}x.textAlign="left";
  return c;
 }
 function shareCanvas(c,file,title){
@@ -2033,7 +2053,7 @@ function shareCanvas(c,file,title){
   if(!b)return toast("Non riesco a creare l'immagine.");
   const fl=new File([b],file,{type:"image/png"});
   if(navigator.canShare&&navigator.canShare({files:[fl]})){
-   navigator.share({files:[fl],title,text:"Fatta con SchoolFlow · "+APP_URL}).catch(e=>{if(e&&e.name!=="AbortError")dl()});
+   navigator.share({files:[fl],title,text:"Fatta con SchoolFlow"+(isNativeApp()?"":" · "+APP_URL)}).catch(e=>{if(e&&e.name!=="AbortError")dl()});
   }else dl();
   function dl(){const u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=file;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}
  },"image/png");
@@ -2042,8 +2062,8 @@ function sharePagella(){let c;try{c=pagellaCanvas(pgTheme())}catch(e){return toa
 function shareStory(){if(pagellaData().overall==null)return toast("Aggiungi prima qualche voto.");let c;try{c=storyCanvas(pgTheme())}catch(e){return toast("Non riesco a creare l'immagine.")}shareCanvas(c,"media-schoolflow.png","La mia media")}
 function shareApp(){
  const text="Uso SchoolFlow per tenere i voti e calcolare le medie, anche prima della pagella. Provala qui:";
- const copy=()=>{if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text+" "+APP_URL).then(()=>toast("Messaggio copiato: incollalo dove vuoi."),()=>toast("Copia questo link: "+APP_URL));else toast("Copia questo link: "+APP_URL)};
- if(navigator.share)navigator.share({title:"SchoolFlow",text,url:APP_URL}).catch(e=>{if(!e||e.name!=="AbortError")copy()});else copy();
+ const copy=()=>{if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text+" "+shareLink()).then(()=>toast("Messaggio copiato: incollalo dove vuoi."),()=>toast("Copia questo link: "+shareLink()));else toast("Copia questo link: "+shareLink())};
+ if(navigator.share)navigator.share({title:"SchoolFlow",text,url:shareLink()}).catch(e=>{if(!e||e.name!=="AbortError")copy()});else copy();
 }
 // il numero della media generale "scorre" fino al nuovo valore
 function animateAvg(el,v){
