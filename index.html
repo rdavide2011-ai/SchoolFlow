@@ -372,6 +372,28 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{fi
 /* Undo voto: riusa la notifica di ripristino della materia, separando i due avvisi */
 .subject-undo.show + .grade-undo.show{bottom:calc(148px + env(safe-area-inset-bottom))}
 @media(min-width:700px){.subject-undo.show + .grade-undo.show{bottom:90px}}
+/* modelli pagella, card storie, peso dei voti */
+.pg-models{display:flex;gap:8px;margin:0 0 12px}
+.pg-models button{flex:1;border:2px solid var(--line);background:var(--card);color:var(--text);border-radius:13px;padding:8px 6px 9px;font:inherit;font-weight:800;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer}
+.pg-models button i{width:100%;height:16px;border-radius:7px;display:block;border:1px solid rgba(127,127,127,.25)}
+.pg-models button.on{border-color:#6d4cf5;box-shadow:0 0 0 3px rgba(109,76,245,.2)}
+.pg-card.t-chiaro{background:linear-gradient(150deg,#fff,#E9ECF6);color:#17191f;border-color:rgba(23,25,31,.14)}
+.pg-card.t-chiaro .pg-kick,.pg-card.t-chiaro .pg-sub,.pg-card.t-chiaro .pg-row .av,.pg-card.t-chiaro .pg-tot b,.pg-card.t-chiaro .pg-note,.pg-card.t-chiaro .pg-brand{color:#5a5f78}
+.pg-card.t-chiaro .pg-head{color:#8a8fa6}
+.pg-card.t-chiaro .pg-row{border-top-color:rgba(23,25,31,.1)}
+.pg-card.t-chiaro .pg-tot{background:rgba(109,76,245,.09)}
+.pg-card.t-colori{background:linear-gradient(150deg,#5b3df0,#c2338f);border-color:rgba(255,255,255,.3)}
+.pg-card.t-colori .pg-kick,.pg-card.t-colori .pg-sub,.pg-card.t-colori .pg-row .av,.pg-card.t-colori .pg-tot b,.pg-card.t-colori .pg-note,.pg-card.t-colori .pg-brand{color:rgba(255,255,255,.86)}
+.pg-card.t-colori .pg-head{color:rgba(255,255,255,.66)}
+.pg-card.t-colori .pg-row{border-top-color:rgba(255,255,255,.26)}
+.pg-card.t-colori .pg-tot{background:rgba(255,255,255,.16)}
+.pg-brand{margin-top:12px;padding-top:10px;border-top:1px solid rgba(127,127,127,.25);text-align:center;font-size:11px;font-weight:800;color:#B9B3E8}
+.pg-story{width:100%;margin-top:12px;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:14px;padding:13px;font:inherit;font-weight:850;font-size:14px;cursor:pointer}
+.wpill{display:inline-block;margin-top:4px;padding:3px 8px;border-radius:99px;font-size:10px;font-weight:900;white-space:nowrap}
+.wpill.down{background:rgba(245,180,67,.2);color:#a8690a}
+.wpill.up{background:rgba(109,76,245,.14);color:#5a3fd6}
+html[data-theme="dark"] .wpill.down{color:#f5b443}
+html[data-theme="dark"] .wpill.up{color:#b3a6ff}
 /* tutorial guidato */
 .tut-ask{position:fixed;inset:0;z-index:920;background:rgba(13,14,18,.58);display:flex;align-items:center;justify-content:center;padding:22px;animation:tutFade .25s ease}
 .tut-ask[hidden],.tour[hidden]{display:none}
@@ -574,6 +596,9 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{fi
   <div class="newyear-card"><div><b>🎓 Nuovo anno scolastico</b><span id="newYearInfo">A fine anno archivia i voti e riparti dal primo periodo.</span></div><button class="ny-btn" onclick="startNewSchoolYear()">Inizia l'anno <span id="nextYearLabel">2027/28</span></button></div>
   <div class="section-title"><h2>Storico periodi</h2><span>solo lettura</span></div>
   <div id="historyList" class="list"></div>
+  <div class="section-title"><h2>Fai conoscere SchoolFlow</h2><span>per i compagni</span></div>
+  <div class="info-card">📣 Se ti piace, mandala ai compagni di classe: il messaggio è già scritto.</div>
+  <div class="backup-row"><button class="backup-btn primary" onclick="shareApp()">↗︎ Condividi SchoolFlow</button></div>
   <div class="section-title"><h2>Tutorial</h2><span>giro guidato</span></div>
   <div class="backup-row"><button class="backup-btn" onclick="startTour()">▶︎ Rivedi il tutorial</button></div>
   <div class="section-title"><h2>Backup</h2><span id="lastBackupLabel">mai fatto</span></div>
@@ -1103,7 +1128,7 @@ function renderGrades(){
  });
  const counter=document.getElementById("gradeCount");
  if(counter)counter.textContent=`${gs.length} ${gs.length===1?"voto visualizzato":"voti visualizzati"}`;
- document.getElementById("gradeList").innerHTML=gs.length?gs.map(g=>{const d=g.date?new Date(g.date+"T12:00:00").toLocaleDateString("it-IT"):"—";return `<div class="grade-card"><div class="subject-icon">${esc(g.icon)}</div><div><div class="grade-subject">${esc(g.subject)}</div><div class="grade-details">${esc(g.type)} · ${d}${g.note?" · "+esc(g.note):""}</div></div><div class="grade-right"><div class="grade-value ${cls(n(g.value))}">${gradeLabel(n(g.value))}</div><div class="weight">${f(n(g.weight,100))}% peso</div></div>${ro?"":`<div class="grade-actions"><button class="action" aria-label="Modifica voto" onclick="editGrade('${g.subjectId}','${g.id}')">✎</button><button class="action delete" aria-label="Elimina voto" onclick="deleteGrade('${g.subjectId}','${g.id}')">×</button></div>`}</div>`}).join(""):viewGrades().length?`<div class="empty"><b>Nessun risultato</b>Prova un altro filtro o termine di ricerca.</div>`:`<div class="empty"><b>Nessun voto</b>Quando inserirai un voto apparirà qui.</div>`;
+ document.getElementById("gradeList").innerHTML=gs.length?gs.map(g=>{const d=g.date?new Date(g.date+"T12:00:00").toLocaleDateString("it-IT"):"—";return `<div class="grade-card"><div class="subject-icon">${esc(g.icon)}</div><div><div class="grade-subject">${esc(g.subject)}</div><div class="grade-details">${esc(g.type)} · ${d}${g.note?" · "+esc(g.note):""}</div></div><div class="grade-right"><div class="grade-value ${cls(n(g.value))}">${gradeLabel(n(g.value))}</div>${wBadge(g)}</div>${ro?"":`<div class="grade-actions"><button class="action" aria-label="Modifica voto" onclick="editGrade('${g.subjectId}','${g.id}')">✎</button><button class="action delete" aria-label="Elimina voto" onclick="deleteGrade('${g.subjectId}','${g.id}')">×</button></div>`}</div>`}).join(""):viewGrades().length?`<div class="empty"><b>Nessun risultato</b>Prova un altro filtro o termine di ricerca.</div>`:`<div class="empty"><b>Nessun voto</b>Quando inserirai un voto apparirà qui.</div>`;
 }
 
 let currentSubjectId=null;
@@ -1140,7 +1165,7 @@ function renderSubjectDetail(){
        <div class="grade-subject">${esc(g.type)}</div>
        <div class="grade-details">${d} · Peso ${f(n(g.weight,100))}%${g.note?" · "+esc(g.note):""}</div>
      </div>
-     <div class="grade-right"><div class="grade-value ${cls(n(g.value))}">${gradeLabel(n(g.value))}</div></div>
+     <div class="grade-right"><div class="grade-value ${cls(n(g.value))}">${gradeLabel(n(g.value))}</div>${n(g.weight,100)!==100?wBadge(g):""}</div>
      ${ro?"":`<div class="grade-actions">
        <button class="action" onclick="editGrade('${s.id}','${g.id}')">✎</button>
        <button class="action delete" onclick="deleteGradeFromDetail('${s.id}','${g.id}')">×</button>
@@ -1915,7 +1940,7 @@ function undoGradeDelete(){
 }
 // ---- Pagella: anteprima (o finale) del periodo che stai guardando, con immagine da condividere ----
 function pgRound(a){return Math.floor(a+0.5+1e-9)}
-function pgColor(v){return v>=6?"#3fcf8e":v>=5?"#f5b443":"#ff6b78"}
+function pgColor(v,k){const T=PGT[k]||PGT.viola;return v>=6?T.ok:v>=5?T.mid:T.bad}
 function pagellaData(){
  const subs=viewSubjects(),rows=[];
  subs.forEach(s=>{const a=sAvg(s);if(a!=null)rows.push({icon:s.icon,name:s.name,avg:a,gr:pgRound(a),cnt:(s.grades||[]).length})});
@@ -1924,52 +1949,101 @@ function pagellaData(){
  const s=data.settings||defaultSettings();
  return {rows,empty,overall:all,insuff:rows.filter(r=>r.gr<6).length,period:viewPeriodName(),year:s.schoolYear||"",archived:isArchiveView(),total:grades(subs).length};
 }
+const APP_URL="https://school-flow-eight.vercel.app",APP_HOST="school-flow-eight.vercel.app";
+const PGT={
+ viola:{n:"Viola",b:["#2A2257","#14112B"],ink:"#fff",sub:"#B9B3E8",mute:"#8f89c6",line:"rgba(255,255,255,.12)",box:"rgba(255,255,255,.08)",ok:"#3fcf8e",mid:"#f5b443",bad:"#ff6b78",sw:"linear-gradient(135deg,#2A2257,#14112B)"},
+ chiaro:{n:"Chiaro",b:["#FFFFFF","#E9ECF6"],ink:"#17191f",sub:"#5a5f78",mute:"#8a8fa6",line:"rgba(23,25,31,.12)",box:"rgba(109,76,245,.09)",ok:"#0f9d63",mid:"#c77d06",bad:"#d93247",sw:"linear-gradient(135deg,#ffffff,#d9def0)"},
+ colori:{n:"Colori",b:["#5b3df0","#c2338f"],ink:"#fff",sub:"rgba(255,255,255,.86)",mute:"rgba(255,255,255,.66)",line:"rgba(255,255,255,.28)",box:"rgba(255,255,255,.16)",ok:"#c9ffe3",mid:"#fff1b3",bad:"#ffd1d8",sw:"linear-gradient(135deg,#5b3df0,#c2338f)"}
+};
+function wBadge(g){const w=n(g.weight,100);return w===100?`<div class="weight">100% peso</div>`:`<div class="wpill ${w>100?"up":"down"}">⚖︎ peso ${f(w)}%</div>`}
+function pgTheme(){let k="viola";try{k=localStorage.getItem("schoolflow_pg_theme")||"viola"}catch(e){}return PGT[k]?k:"viola"}
+function setPgTheme(k){if(!PGT[k])return;try{localStorage.setItem("schoolflow_pg_theme",k)}catch(e){}renderPagella()}
+function renderPagella(){
+ const d=pagellaData(),k=pgTheme(),body=document.getElementById("pagellaBody");
+ const chips=`<div class="pg-models" role="radiogroup" aria-label="Stile della pagella">${Object.keys(PGT).map(id=>`<button type="button" role="radio" aria-checked="${id===k}" class="${id===k?"on":""}" onclick="setPgTheme('${id}')"><i style="background:${PGT[id].sw}"></i>${PGT[id].n}</button>`).join("")}</div>`;
+ body.innerHTML=chips+`<div class="pg-card t-${k}"><div class="pg-top"><div><div class="pg-kick">PAGELLA</div><div class="pg-title">${esc(d.period)}</div><div class="pg-sub">Anno scolastico ${esc(d.year)}</div></div><div class="pg-tag${d.archived?" fin":""}">${d.archived?"PERIODO CONCLUSO":"ANTEPRIMA"}</div></div>
+ <div class="pg-head"><span>MATERIA</span><span>MEDIA · VOTO</span></div>
+ ${d.rows.map(r=>`<div class="pg-row"><span>${esc(r.icon)}</span><span class="nm">${esc(r.name)}</span><span class="av">${f(r.avg)}</span><span class="gr" style="color:${pgColor(r.gr,k)}">${r.gr}</span></div>`).join("")}
+ <div class="pg-tot"><b>MEDIA GENERALE</b><strong style="color:${pgColor(d.overall,k)}">${f(d.overall)}</strong></div>
+ <div class="pg-note">${d.insuff?`Materie sotto il 6: ${d.insuff}. `:"Nessuna materia sotto il 6. "}${d.archived?"":"È un'anteprima: cambia ogni volta che aggiungi un voto. "}Il voto in pagella è la media arrotondata${d.empty?`; ${d.empty} ${d.empty===1?"materia senza voti non è inclusa":"materie senza voti non sono incluse"}`:""}.</div>
+ <div class="pg-brand">Fatta con SchoolFlow · ${APP_HOST}</div></div>
+ <button type="button" class="pg-story" onclick="shareStory()">📱 Card per le storie</button>`;
+}
 function openPagella(){
  const d=pagellaData();
  if(!d.rows.length)return toast("Aggiungi prima qualche voto.");
- const body=document.getElementById("pagellaBody");
- body.innerHTML=`<div class="pg-card"><div class="pg-top"><div><div class="pg-kick">PAGELLA</div><div class="pg-title">${esc(d.period)}</div><div class="pg-sub">Anno scolastico ${esc(d.year)}</div></div><div class="pg-tag${d.archived?" fin":""}">${d.archived?"PERIODO CONCLUSO":"ANTEPRIMA"}</div></div>
- <div class="pg-head"><span>MATERIA</span><span>MEDIA · VOTO</span></div>
- ${d.rows.map(r=>`<div class="pg-row"><span>${esc(r.icon)}</span><span class="nm">${esc(r.name)}</span><span class="av">${f(r.avg)}</span><span class="gr" style="color:${pgColor(r.gr)}">${r.gr}</span></div>`).join("")}
- <div class="pg-tot"><b>MEDIA GENERALE</b><strong style="color:${pgColor(d.overall)}">${f(d.overall)}</strong></div>
- <div class="pg-note">${d.insuff?`Materie sotto il 6: ${d.insuff}. `:"Nessuna materia sotto il 6. "}${d.archived?"":"È un'anteprima: cambia ogni volta che aggiungi un voto. "}Il voto in pagella è la media arrotondata${d.empty?`; ${d.empty} ${d.empty===1?"materia senza voti non è inclusa":"materie senza voti non sono incluse"}`:""}.</div></div>`;
+ renderPagella();
  document.getElementById("pagellaModal").classList.add("show");
 }
-function pagellaCanvas(){
- const d=pagellaData(),W=1080,rowH=96,H=330+d.rows.length*rowH+330;
- const c=document.createElement("canvas");c.width=W;c.height=H;const x=c.getContext("2d");
- const g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,"#2A2257");g.addColorStop(1,"#14112B");x.fillStyle=g;x.fillRect(0,0,W,H);
- const FF="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif";
- x.textBaseline="alphabetic";x.fillStyle="#B9B3E8";x.font="800 30px "+FF;x.fillText("PAGELLA",80,120);
- x.fillStyle="#fff";x.font="900 84px "+FF;x.fillText(d.period,80,215);
- x.fillStyle="#B9B3E8";x.font="700 34px "+FF;x.fillText("Anno scolastico "+d.year,80,272);
- const tag=d.archived?"PERIODO CONCLUSO":"ANTEPRIMA";x.font="900 26px "+FF;const tw=x.measureText(tag).width+56;
- x.fillStyle=d.archived?"rgba(63,207,142,.16)":"rgba(245,180,67,.18)";x.beginPath();x.roundRect(W-80-tw,86,tw,56,28);x.fill();
- x.fillStyle=d.archived?"#3fcf8e":"#f5b443";x.textAlign="center";x.fillText(tag,W-80-tw/2,124);x.textAlign="left";
- let y=330;x.strokeStyle="rgba(255,255,255,.12)";x.lineWidth=2;
+const PGFF="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif";
+function pgBg(x,T,W,H){const g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,T.b[0]);g.addColorStop(1,T.b[1]);x.fillStyle=g;x.fillRect(0,0,W,H)}
+function pgFit(x,txt,font,max,start){let s=start;do{x.font=font.replace("#",s);if(x.measureText(txt).width<=max||s<=24)break;s-=4}while(true);return s}
+function pagellaCanvas(k){
+ k=k||pgTheme();const T=PGT[k]||PGT.viola,d=pagellaData(),W=1080,rowH=96,base=330+d.rows.length*rowH,H=base+390;
+ const c=document.createElement("canvas");c.width=W;c.height=H;const x=c.getContext("2d");pgBg(x,T,W,H);
+ const FF=PGFF;
+ x.textBaseline="alphabetic";x.fillStyle=T.sub;x.font="800 30px "+FF;x.fillText("PAGELLA",80,120);
+ x.fillStyle=T.ink;pgFit(x,d.period,"900 #px "+FF,W-160-300,84);x.fillText(d.period,80,215);
+ x.fillStyle=T.sub;x.font="700 34px "+FF;x.fillText("Anno scolastico "+d.year,80,272);
+ const tag=d.archived?"PERIODO CONCLUSO":"ANTEPRIMA",tc=d.archived?T.ok:T.mid;x.font="900 26px "+FF;const tw=x.measureText(tag).width+56;
+ x.globalAlpha=.2;x.fillStyle=tc;x.beginPath();x.roundRect(W-80-tw,86,tw,56,28);x.fill();x.globalAlpha=1;
+ x.fillStyle=tc;x.textAlign="center";x.fillText(tag,W-80-tw/2,124);x.textAlign="left";
+ let y=330;x.strokeStyle=T.line;x.lineWidth=2;
  d.rows.forEach(r=>{x.beginPath();x.moveTo(80,y-40);x.lineTo(W-80,y-40);x.stroke();
-  x.font="46px "+FF;x.fillStyle="#fff";x.fillText(r.icon,80,y+14);
+  x.font="46px "+FF;x.fillStyle=T.ink;x.fillText(r.icon,80,y+14);
   x.font="800 40px "+FF;let nm=r.name;while(x.measureText(nm).width>470&&nm.length>3)nm=nm.slice(0,-2);if(nm!==r.name)nm=nm.trimEnd()+"…";x.fillText(nm,160,y+14);
-  x.textAlign="right";x.font="700 34px "+FF;x.fillStyle="#B9B3E8";x.fillText(f(r.avg),W-200,y+12);
-  x.font="900 56px "+FF;x.fillStyle=pgColor(r.gr);x.fillText(String(r.gr),W-80,y+18);x.textAlign="left";y+=rowH});
- y+=10;x.fillStyle="rgba(255,255,255,.08)";x.beginPath();x.roundRect(80,y,W-160,150,34);x.fill();
- x.fillStyle="#B9B3E8";x.font="800 30px "+FF;x.fillText("MEDIA GENERALE",120,y+88);
- x.textAlign="right";x.fillStyle=pgColor(d.overall);x.font="950 84px "+FF;x.fillText(f(d.overall),W-120,y+102);x.textAlign="left";
- y+=210;x.fillStyle="#8f89c6";x.font="600 28px "+FF;
+  x.textAlign="right";x.font="700 34px "+FF;x.fillStyle=T.sub;x.fillText(f(r.avg),W-200,y+12);
+  x.font="900 56px "+FF;x.fillStyle=pgColor(r.gr,k);x.fillText(String(r.gr),W-80,y+18);x.textAlign="left";y+=rowH});
+ y+=10;x.fillStyle=T.box;x.beginPath();x.roundRect(80,y,W-160,150,34);x.fill();
+ x.fillStyle=T.sub;x.font="800 30px "+FF;x.fillText("MEDIA GENERALE",120,y+88);
+ x.textAlign="right";x.fillStyle=pgColor(d.overall,k);x.font="950 84px "+FF;x.fillText(f(d.overall),W-120,y+102);x.textAlign="left";
+ y+=210;x.fillStyle=T.mute;x.font="600 28px "+FF;
  x.fillText(d.archived?"Voto in pagella = media arrotondata":"Anteprima · cambia quando aggiungi un voto",80,y);
- x.textAlign="right";x.font="800 30px "+FF;x.fillStyle="#B9B3E8";x.fillText("SchoolFlow",W-80,y);x.textAlign="left";
+ x.strokeStyle=T.line;x.beginPath();x.moveTo(80,y+42);x.lineTo(W-80,y+42);x.stroke();
+ x.fillStyle=T.ink;x.font="900 46px "+FF;x.fillText("SchoolFlow",80,y+112);
+ x.textAlign="right";x.fillStyle=T.sub;x.font="700 30px "+FF;x.fillText(APP_HOST,W-80,y+110);x.textAlign="left";
  return c;
 }
-function sharePagella(){
- let c;try{c=pagellaCanvas()}catch(e){return toast("Non riesco a creare l'immagine.")}
+function storyCanvas(k){
+ k=k||pgTheme();const T=PGT[k]||PGT.viola,d=pagellaData(),W=1080,H=1920,FF=PGFF;
+ const c=document.createElement("canvas");c.width=W;c.height=H;const x=c.getContext("2d");pgBg(x,T,W,H);
+ x.textBaseline="alphabetic";x.textAlign="center";
+ x.fillStyle=T.sub;x.font="800 40px "+FF;x.fillText("LA MIA MEDIA",W/2,250);
+ x.fillStyle=T.ink;pgFit(x,d.period,"900 #px "+FF,W-160,80);x.fillText(d.period,W/2,350);
+ x.fillStyle=T.sub;x.font="700 38px "+FF;x.fillText("Anno scolastico "+d.year,W/2,412);
+ const big=f(d.overall);x.fillStyle=pgColor(d.overall,k);pgFit(x,big,"950 #px "+FF,W-160,400);x.fillText(big,W/2,880);
+ x.fillStyle=T.sub;x.font="700 44px "+FF;x.fillText(d.total+(d.total===1?" voto":" voti")+" · "+d.rows.length+(d.rows.length===1?" materia":" materie"),W/2,1020);
+ const top=d.rows.slice().sort((p,q)=>q.avg-p.avg).slice(0,3);
+ if(top.length){
+  const bh=96+top.length*108;x.fillStyle=T.box;x.beginPath();x.roundRect(80,1090,W-160,bh,40);x.fill();
+  x.textAlign="left";x.fillStyle=T.mute;x.font="800 30px "+FF;x.fillText(top.length>1?"LE MIGLIORI":"LA MIGLIORE",130,1150);
+  top.forEach((r,i)=>{const yy=1220+i*108;x.font="52px "+FF;x.fillStyle=T.ink;x.fillText(r.icon,130,yy+10);
+   x.font="800 46px "+FF;let nm=r.name;while(x.measureText(nm).width>520&&nm.length>3)nm=nm.slice(0,-2);if(nm!==r.name)nm=nm.trimEnd()+"…";x.fillText(nm,215,yy+10);
+   x.textAlign="right";x.font="900 54px "+FF;x.fillStyle=pgColor(pgRound(r.avg),k);x.fillText(f(r.avg),W-130,yy+12);x.textAlign="left"});
+ }
+ x.textAlign="center";x.fillStyle=T.ink;x.font="950 90px "+FF;x.fillText("SchoolFlow",W/2,1690);
+ x.fillStyle=T.sub;x.font="700 38px "+FF;x.fillText("I tuoi voti, sempre sotto controllo",W/2,1752);
+ x.font="800 40px "+FF;const hw=x.measureText(APP_HOST).width+90;
+ x.fillStyle=T.box;x.beginPath();x.roundRect((W-hw)/2,1786,hw,88,44);x.fill();
+ x.fillStyle=T.ink;x.fillText(APP_HOST,W/2,1844);x.textAlign="left";
+ return c;
+}
+function shareCanvas(c,file,title){
  c.toBlob(b=>{
   if(!b)return toast("Non riesco a creare l'immagine.");
-  const file=new File([b],"pagella-schoolflow.png",{type:"image/png"});
-  if(navigator.canShare&&navigator.canShare({files:[file]})){
-   navigator.share({files:[file],title:"La mia pagella"}).catch(e=>{if(e&&e.name!=="AbortError")dl()});
+  const fl=new File([b],file,{type:"image/png"});
+  if(navigator.canShare&&navigator.canShare({files:[fl]})){
+   navigator.share({files:[fl],title,text:"Fatta con SchoolFlow · "+APP_URL}).catch(e=>{if(e&&e.name!=="AbortError")dl()});
   }else dl();
-  function dl(){const u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download="pagella-schoolflow.png";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast("Immagine salvata")}
+  function dl(){const u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=file;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}
  },"image/png");
+}
+function sharePagella(){let c;try{c=pagellaCanvas(pgTheme())}catch(e){return toast("Non riesco a creare l'immagine.")}shareCanvas(c,"pagella-schoolflow.png","La mia pagella")}
+function shareStory(){if(pagellaData().overall==null)return toast("Aggiungi prima qualche voto.");let c;try{c=storyCanvas(pgTheme())}catch(e){return toast("Non riesco a creare l'immagine.")}shareCanvas(c,"media-schoolflow.png","La mia media")}
+function shareApp(){
+ const text="Uso SchoolFlow per tenere i voti e calcolare le medie, anche prima della pagella. Provala qui:";
+ const copy=()=>{if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text+" "+APP_URL).then(()=>toast("Messaggio copiato: incollalo dove vuoi."),()=>toast("Copia questo link: "+APP_URL));else toast("Copia questo link: "+APP_URL)};
+ if(navigator.share)navigator.share({title:"SchoolFlow",text,url:APP_URL}).catch(e=>{if(!e||e.name!=="AbortError")copy()});else copy();
 }
 // il numero della media generale "scorre" fino al nuovo valore
 function animateAvg(el,v){
