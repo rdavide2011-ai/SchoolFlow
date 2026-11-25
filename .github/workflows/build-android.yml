@@ -184,7 +184,7 @@ jobs:
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging android/app/build/outputs/apk/debug/app-debug.apk > /tmp/schoolflow-aapt.txt
           grep -E "^package:|^sdkVersion:|^targetSdkVersion:" /tmp/schoolflow-aapt.txt
           grep -q "name='com.rivapps.schoolflow'" /tmp/schoolflow-aapt.txt
-          grep -q "versionCode='15'" /tmp/schoolflow-aapt.txt
+          grep -q "versionCode='16'" /tmp/schoolflow-aapt.txt
           grep -q "android.permission.VIBRATE" /tmp/schoolflow-aapt.txt
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump xmltree android/app/build/outputs/apk/debug/app-debug.apk AndroidManifest.xml > /tmp/schoolflow-manifest.txt
           grep -q "OverallWidgetProvider" /tmp/schoolflow-manifest.txt
