@@ -390,11 +390,13 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{fi
 .pg-card.t-colori .pg-tag{color:var(--pgk,#f5b443);border-color:var(--pgk,rgba(245,180,67,.45))}
 .pg-pers{width:100%;margin:-2px 0 12px;border:1px dashed #6d4cf5;background:rgba(109,76,245,.08);color:var(--text);border-radius:13px;padding:11px;font:inherit;font-weight:850;font-size:13px;cursor:pointer}
 .pg-pers.on{background:rgba(109,76,245,.18);border-style:solid}
-.pg-cust{border:1px solid var(--line);background:var(--card);border-radius:15px;padding:12px;margin:0 0 12px}
-.pg-cr{margin-bottom:10px}.pg-cr>span{display:block;font-size:11px;font-weight:900;letter-spacing:.6px;color:#8a8fa6;margin-bottom:7px}
-.pg-sw{display:flex;flex-wrap:wrap;gap:8px}
-.pg-sw button,.pg-pick{width:34px;height:34px;border-radius:50%;border:2px solid rgba(127,127,127,.35);padding:0;cursor:pointer;position:relative}
-.pg-sw button.on{border-color:#6d4cf5;box-shadow:0 0 0 3px rgba(109,76,245,.3)}
+.pg-cust{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:14px;margin:0 0 12px}
+.pg-prev{height:34px;border-radius:12px;margin:0 0 12px;border:1px solid rgba(127,127,127,.25)}
+.pg-cr{margin-bottom:12px}.pg-cr>span{display:flex;justify-content:space-between;font-size:11px;font-weight:900;letter-spacing:.6px;color:#8a8fa6;margin-bottom:9px}.pg-cr>span em{font-style:normal;font-weight:800;letter-spacing:0;text-transform:uppercase}
+.pg-sw{display:grid;grid-template-columns:repeat(7,1fr);gap:9px;justify-items:center}
+.pg-sw button,.pg-pick{width:100%;max-width:44px;aspect-ratio:1;border-radius:50%;border:2px solid rgba(127,127,127,.3);padding:0;cursor:pointer;position:relative}
+.pg-sw button.on{border-color:#fff;box-shadow:0 0 0 3px #6d4cf5}
+.pg-sw button.on:after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:17px;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.7)}
 .pg-pick{display:flex;align-items:center;justify-content:center;background:conic-gradient(#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);overflow:hidden;font-weight:900;color:#fff;text-shadow:0 0 3px #000}
 .pg-pick input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
 .pg-ca{display:flex;gap:8px}.pg-ca button{flex:1;border:1px solid var(--line);background:transparent;color:var(--text);border-radius:11px;padding:9px;font:inherit;font-weight:800;font-size:12px;cursor:pointer}
@@ -1986,7 +1988,7 @@ const PGT={
  chiaro:{n:"Chiaro",b:["#FFFFFF","#E9ECF6"],ink:"#17191f",sub:"#5a5f78",mute:"#8a8fa6",line:"rgba(23,25,31,.12)",box:"rgba(109,76,245,.09)",ok:"#0f9d63",mid:"#c77d06",bad:"#d93247",sw:"linear-gradient(135deg,#ffffff,#d9def0)"},
  colori:{n:"Colori",b:["#5b3df0","#c2338f"],ink:"#fff",sub:"rgba(255,255,255,.86)",mute:"rgba(255,255,255,.66)",line:"rgba(255,255,255,.28)",box:"rgba(255,255,255,.16)",ok:"#c9ffe3",mid:"#fff1b3",bad:"#ffd1d8",sw:"linear-gradient(135deg,#5b3df0,#c2338f)"}
 };
-const PG_PALETTE=["#5b3df0","#c2338f","#ff6b35","#f5b443","#3fcf8e","#0ea5e9","#1e3a8a","#ec4899","#ef4444","#111827","#14112b","#ffffff"],PG_DEF=["#5b3df0","#c2338f"];
+const PG_PALETTE=["#5b3df0","#c2338f","#ff6b35","#f5b443","#3fcf8e","#0ea5e9","#14b8a6","#1e3a8a","#ec4899","#ef4444","#111827","#14112b","#ffffff"],PG_DEF=["#5b3df0","#c2338f"];
 let pgEditOpen=false;
 function pgHex(v){return /^#[0-9a-f]{6}$/i.test(v||"")}
 function pgCustom(){let a=null;try{a=JSON.parse(localStorage.getItem("schoolflow_pg_custom"))}catch(e){}return Array.isArray(a)&&a.length===2&&a.every(pgHex)?a:PG_DEF.slice()}
@@ -1998,13 +2000,13 @@ function pgApplyCustom(){const c=pgCustom(),T=PGT.colori,lt=(pgLum(c[0])+pgLum(c
 pgApplyCustom();
 function pgSkin(T){return "background:linear-gradient(150deg,"+T.b[0]+","+T.b[1]+");color:"+T.ink+";--pgs:"+T.sub+";--pgm:"+T.mute+";--pgl:"+T.line+";--pgb:"+T.box+";--pgk:"+(T.ink==="#17191f"?"#6b3f00":"#f5b443")}
 function setPgCustom(i,v,live){if(!pgHex(v))return;const c=pgCustom();c[i]=v.toLowerCase();try{localStorage.setItem("schoolflow_pg_custom",JSON.stringify(c))}catch(e){}pgApplyCustom();
- if(live){const card=document.querySelector("#pagellaBody .pg-card"),sw=document.querySelector('#pagellaBody .pg-models button[onclick*="colori"] i');if(card)card.setAttribute("style",pgSkin(PGT.colori));if(sw)sw.style.background=PGT.colori.sw}else renderPagella()}
+ if(live){const card=document.querySelector("#pagellaBody .pg-card"),sw=document.querySelector('#pagellaBody .pg-models button[onclick*="colori"] i');if(card)card.setAttribute("style",pgSkin(PGT.colori));const pv=document.querySelector("#pagellaBody .pg-prev");if(pv)pv.style.background="linear-gradient(90deg,"+PGT.colori.b[0]+","+PGT.colori.b[1]+")";if(sw)sw.style.background=PGT.colori.sw}else renderPagella()}
 function swapPgCustom(){const c=pgCustom();try{localStorage.setItem("schoolflow_pg_custom",JSON.stringify([c[1],c[0]]))}catch(e){}pgApplyCustom();renderPagella()}
 function resetPgCustom(){try{localStorage.removeItem("schoolflow_pg_custom")}catch(e){}pgApplyCustom();renderPagella()}
 function togglePgEdit(){pgEditOpen=!pgEditOpen;renderPagella()}
 function pgPanel(){const c=pgCustom();
- const row=i=>`<div class="pg-cr"><span>COLORE ${i+1}</span><div class="pg-sw">${PG_PALETTE.map(h=>`<button type="button" aria-label="${h}" class="${h===c[i].toLowerCase()?"on":""}" style="background:${h}" onclick="setPgCustom(${i},'${h}')"></button>`).join("")}<label class="pg-pick" title="Scegli un colore"><input type="color" value="${c[i]}" oninput="setPgCustom(${i},this.value,true)" onchange="setPgCustom(${i},this.value)">+</label></div></div>`;
- return `<div class="pg-cust">${row(0)}${row(1)}<div class="pg-ca"><button type="button" onclick="swapPgCustom()">⇄ Scambia</button><button type="button" onclick="resetPgCustom()">Ripristina</button></div></div>`}
+ const row=i=>`<div class="pg-cr"><span>COLORE ${i+1}<em>${c[i]}</em></span><div class="pg-sw">${PG_PALETTE.map(h=>`<button type="button" aria-label="${h}" class="${h===c[i].toLowerCase()?"on":""}" style="background:${h}" onclick="setPgCustom(${i},'${h}')"></button>`).join("")}<label class="pg-pick" title="Scegli un colore"><input type="color" value="${c[i]}" oninput="setPgCustom(${i},this.value,true)" onchange="setPgCustom(${i},this.value)">+</label></div></div>`;
+ return `<div class="pg-cust"><div class="pg-prev" style="background:linear-gradient(90deg,${c[0]},${c[1]})"></div>${row(0)}${row(1)}<div class="pg-ca"><button type="button" onclick="swapPgCustom()">⇄ Scambia</button><button type="button" onclick="resetPgCustom()">Ripristina</button></div></div>`}
 function wBadge(g){const w=n(g.weight,100);return w===100?`<div class="weight">100% peso</div>`:`<div class="wpill ${w>100?"up":"down"}">⚖︎ peso ${f(w)}%</div>`}
 function pgTheme(){let k="viola";try{k=localStorage.getItem("schoolflow_pg_theme")||"viola"}catch(e){}return PGT[k]?k:"viola"}
 function setPgTheme(k){if(!PGT[k])return;try{localStorage.setItem("schoolflow_pg_theme",k)}catch(e){}renderPagella()}
