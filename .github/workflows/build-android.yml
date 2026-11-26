@@ -38,7 +38,7 @@ jobs:
           cat > package.json <<'EOF'
           {
             "name": "schoolflow-android",
-            "version": "1.3.2",
+            "version": "1.3.3",
             "private": true,
             "dependencies": {
               "@capacitor/core": "7.4.3",
@@ -70,9 +70,9 @@ jobs:
           from pathlib import Path
           path=Path("android/app/build.gradle")
           old=path.read_text()
-          new,n=re.subn(r'\bversionCode\s+\d+', 'versionCode 16', old, count=1)
+          new,n=re.subn(r'\bversionCode\s+\d+', 'versionCode 17', old, count=1)
           if n!=1: raise SystemExit("Could not assign Android versionCode")
-          new,n=re.subn(r'\bversionName\s+["\x27][^"\x27]+["\x27]', 'versionName "1.3.2"', new, count=1)
+          new,n=re.subn(r'\bversionName\s+["\x27][^"\x27]+["\x27]', 'versionName "1.3.3"', new, count=1)
           if n!=1: raise SystemExit("Could not assign Android versionName")
           path.write_text(new)
           # Capacitor 7 defaults to minSdkVersion 23. Google Play's automatic
@@ -131,7 +131,10 @@ jobs:
             pagella:['openPagella','sharePagella','pagellaCanvas'],
             animazioni:['animateAvg','sfIn','sfSheetOut'],
             tutorial:['startTour','askTutorial','tutAnswer'],
-            sharing:['shareApp','storyCanvas','PLAY_URL','isNativeApp','tapHaptic']
+            sharing:['shareApp','storyCanvas','PLAY_URL','isNativeApp','tapHaptic'],
+            personalizza:['pgPanel','setPgCustom','togglePgEdit'],
+            daRecuperare:['openRecover','recoverModal'],
+            chiusuraTrascinando:['pointerdown','setPointerCapture']
           };
           for(const [feature,markers] of Object.entries(tests)){
             for(const marker of markers){
@@ -147,7 +150,7 @@ jobs:
           grep -q '"appId": "com.rivapps.schoolflow"' capacitor.config.json
           grep -q '"androidScheme": "https"' capacitor.config.json
           grep -q '"hostname": "localhost"' capacitor.config.json
-          grep -q 'versionCode 16' android/app/build.gradle
+          grep -q 'versionCode 17' android/app/build.gradle
           grep -Eq 'minSdkVersion[[:space:]]*=[[:space:]]*24' android/variables.gradle
           grep -Eq 'compileSdkVersion[[:space:]]*=[[:space:]]*36' android/variables.gradle
           grep -Eq 'targetSdkVersion[[:space:]]*=[[:space:]]*36' android/variables.gradle
@@ -184,7 +187,7 @@ jobs:
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging android/app/build/outputs/apk/debug/app-debug.apk > /tmp/schoolflow-aapt.txt
           grep -E "^package:|^sdkVersion:|^targetSdkVersion:" /tmp/schoolflow-aapt.txt
           grep -q "name='com.rivapps.schoolflow'" /tmp/schoolflow-aapt.txt
-          grep -q "versionCode='16'" /tmp/schoolflow-aapt.txt
+          grep -q "versionCode='17'" /tmp/schoolflow-aapt.txt
           grep -q "android.permission.VIBRATE" /tmp/schoolflow-aapt.txt
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump xmltree android/app/build/outputs/apk/debug/app-debug.apk AndroidManifest.xml > /tmp/schoolflow-manifest.txt
           grep -q "OverallWidgetProvider" /tmp/schoolflow-manifest.txt
