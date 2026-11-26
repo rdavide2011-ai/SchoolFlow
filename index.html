@@ -115,6 +115,10 @@ main{max-width:650px;margin:auto;padding:8px 17px 20px}
 
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:13px}
 .stat-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:15px;box-shadow:var(--shadow);min-width:0}
+.stat-card.tap{cursor:pointer;-webkit-tap-highlight-color:transparent}.stat-card.tap:active{transform:scale(.97)}
+.rec-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:13px 14px;margin:0 0 9px;border:1px solid var(--line);border-radius:15px;background:var(--card);color:var(--text);font:inherit;cursor:pointer}
+.rec-row .ic{font-size:24px}.rec-row .nm{flex:1;min-width:0;font-weight:850;font-size:15px}.rec-row .nm small{display:block;font-weight:700;font-size:11px;color:var(--muted);margin-top:2px}.rec-row .av{font-size:22px;font-weight:950}.rec-row .ch{color:var(--muted);font-weight:900}
+.rec-empty{text-align:center;padding:30px 10px;color:var(--muted);font-weight:800}
 .stat-card .stat-kicker{font-size:9px;color:var(--muted);font-weight:900;letter-spacing:1px}
 .stat-card .stat-title{font-size:13px;font-weight:850;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stat-card .stat-value{font-size:26px;font-weight:950;margin-top:4px}
@@ -507,9 +511,9 @@ html[data-theme="dark"] .wpill.up{color:#b3a6ff}
  <div class="page-head"><div class="eyebrow">ANALISI</div><h1>Statistiche</h1><p>Scopri come stanno andando le tue materie e come cambia il rendimento nel tempo.</p></div>
  <div class="stats-grid">
   <div class="stat-card"><div class="stat-kicker">MIGLIORE MATERIA</div><div id="statsBestName" class="stat-title">—</div><div id="statsBestValue" class="stat-value good">—</div></div>
-  <div class="stat-card"><div class="stat-kicker">DA RECUPERARE</div><div id="statsWorstName" class="stat-title">—</div><div id="statsWorstValue" class="stat-value bad">—</div></div>
+  <div class="stat-card tap" role="button" tabindex="0" onclick="openRecover()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openRecover()}"><div class="stat-kicker">DA RECUPERARE ›</div><div id="statsWorstName" class="stat-title">—</div><div id="statsWorstValue" class="stat-value bad">—</div></div>
   <div class="stat-card"><div class="stat-kicker">MEDIA GENERALE</div><div id="statsGeneral" class="stat-value">—</div><div class="stat-title">su tutti i voti</div></div>
-  <div class="stat-card"><div class="stat-kicker">SOTTO LA SUFFICIENZA</div><div id="statsBelow" class="stat-value bad">0</div><div class="stat-title">materie</div></div>
+  <div class="stat-card tap" role="button" tabindex="0" onclick="openRecover()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openRecover()}"><div class="stat-kicker">SOTTO LA SUFFICIENZA ›</div><div id="statsBelow" class="stat-value bad">0</div><div class="stat-title">materie</div></div>
  </div>
  <div class="chart-card">
   <div class="chart-head">
@@ -688,6 +692,13 @@ html[data-theme="dark"] .wpill.up{color:#b3a6ff}
    <div class="field"><label>SE NELLA PROSSIMA VERIFICA PRENDI…</label><div id="calcTable" class="calc-table"></div></div>
   </div></div>
   <div class="sheet-foot"><button class="cancel" onclick="closeModal('calcModal')">Chiudi</button></div>
+ </div>
+</div>
+<div id="recoverModal" class="modal-wrap">
+ <div class="sheet">
+  <div class="handle"></div><div class="sheet-head"><h3>📉 Materie da recuperare</h3><button class="close" onclick="closeModal('recoverModal')">×</button></div>
+  <div class="sheet-body"><div id="recoverBody"></div></div>
+  <div class="sheet-foot"><button class="cancel" onclick="closeModal('recoverModal')">Chiudi</button></div>
  </div>
 </div>
 <div id="historyModal" class="modal-wrap">
@@ -1279,6 +1290,12 @@ function setSfChart(mode){
  try{localStorage.setItem('schoolflow_chart_mode',mode)}catch(e){}
  renderStatistics();
 }
+function openRecover(){
+ const low=viewSubjects().filter(s=>(s.grades||[]).length).map(s=>({s,a:sAvg(s)})).filter(x=>x.a<6).sort((p,q)=>p.a-q.a);
+ document.getElementById("recoverBody").innerHTML=low.length?low.map(x=>`<button type="button" class="rec-row" onclick="openRecoverSubject('${esc(x.s.id)}')"><span class="ic">${esc(x.s.icon)}</span><span class="nm">${esc(x.s.name)}<small>${x.s.grades.length} ${x.s.grades.length===1?"voto":"voti"} · mancano ${f(6-x.a)} punti al 6</small></span><span class="av ${cls(x.a)}">${f(x.a)}</span><span class="ch">›</span></button>`).join(""):`<div class="rec-empty">🎉 Nessuna materia sotto il 6.<br>Sei in regola!</div>`;
+ document.getElementById("recoverModal").classList.add("show");
+}
+function openRecoverSubject(id){closeModal("recoverModal");setTimeout(()=>openSubjectDetail(id),210)}
 function renderStatistics(){
  const subs=viewSubjects();
  const subjectsWithGrades=subs.filter(s=>(s.grades||[]).length);
