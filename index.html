@@ -382,11 +382,22 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator{fi
 .pg-card.t-chiaro .pg-head{color:#8a8fa6}
 .pg-card.t-chiaro .pg-row{border-top-color:rgba(23,25,31,.1)}
 .pg-card.t-chiaro .pg-tot{background:rgba(109,76,245,.09)}
-.pg-card.t-colori{background:linear-gradient(150deg,#5b3df0,#c2338f);border-color:rgba(255,255,255,.3)}
-.pg-card.t-colori .pg-kick,.pg-card.t-colori .pg-sub,.pg-card.t-colori .pg-row .av,.pg-card.t-colori .pg-tot b,.pg-card.t-colori .pg-note,.pg-card.t-colori .pg-brand{color:rgba(255,255,255,.86)}
-.pg-card.t-colori .pg-head{color:rgba(255,255,255,.66)}
-.pg-card.t-colori .pg-row{border-top-color:rgba(255,255,255,.26)}
-.pg-card.t-colori .pg-tot{background:rgba(255,255,255,.16)}
+.pg-card.t-colori{background:linear-gradient(150deg,#5b3df0,#c2338f);border-color:var(--pgl,rgba(255,255,255,.3))}
+.pg-card.t-colori .pg-kick,.pg-card.t-colori .pg-sub,.pg-card.t-colori .pg-row .av,.pg-card.t-colori .pg-tot b,.pg-card.t-colori .pg-note,.pg-card.t-colori .pg-brand{color:var(--pgs,rgba(255,255,255,.86))}
+.pg-card.t-colori .pg-head{color:var(--pgm,rgba(255,255,255,.66))}
+.pg-card.t-colori .pg-row{border-top-color:var(--pgl,rgba(255,255,255,.26))}
+.pg-card.t-colori .pg-tot{background:var(--pgb,rgba(255,255,255,.16))}
+.pg-card.t-colori .pg-tag{color:var(--pgk,#f5b443);border-color:var(--pgk,rgba(245,180,67,.45))}
+.pg-pers{width:100%;margin:-2px 0 12px;border:1px dashed #6d4cf5;background:rgba(109,76,245,.08);color:var(--text);border-radius:13px;padding:11px;font:inherit;font-weight:850;font-size:13px;cursor:pointer}
+.pg-pers.on{background:rgba(109,76,245,.18);border-style:solid}
+.pg-cust{border:1px solid var(--line);background:var(--card);border-radius:15px;padding:12px;margin:0 0 12px}
+.pg-cr{margin-bottom:10px}.pg-cr>span{display:block;font-size:11px;font-weight:900;letter-spacing:.6px;color:#8a8fa6;margin-bottom:7px}
+.pg-sw{display:flex;flex-wrap:wrap;gap:8px}
+.pg-sw button,.pg-pick{width:34px;height:34px;border-radius:50%;border:2px solid rgba(127,127,127,.35);padding:0;cursor:pointer;position:relative}
+.pg-sw button.on{border-color:#6d4cf5;box-shadow:0 0 0 3px rgba(109,76,245,.3)}
+.pg-pick{display:flex;align-items:center;justify-content:center;background:conic-gradient(#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);overflow:hidden;font-weight:900;color:#fff;text-shadow:0 0 3px #000}
+.pg-pick input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.pg-ca{display:flex;gap:8px}.pg-ca button{flex:1;border:1px solid var(--line);background:transparent;color:var(--text);border-radius:11px;padding:9px;font:inherit;font-weight:800;font-size:12px;cursor:pointer}
 .pg-brand{margin-top:12px;padding-top:10px;border-top:1px solid rgba(127,127,127,.25);text-align:center;font-size:11px;font-weight:800;color:#B9B3E8}
 .pg-story{width:100%;margin-top:12px;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:14px;padding:13px;font:inherit;font-weight:850;font-size:14px;cursor:pointer}
 .wpill{display:inline-block;margin-top:4px;padding:3px 8px;border-radius:99px;font-size:10px;font-weight:900;white-space:nowrap}
@@ -1975,13 +1986,33 @@ const PGT={
  chiaro:{n:"Chiaro",b:["#FFFFFF","#E9ECF6"],ink:"#17191f",sub:"#5a5f78",mute:"#8a8fa6",line:"rgba(23,25,31,.12)",box:"rgba(109,76,245,.09)",ok:"#0f9d63",mid:"#c77d06",bad:"#d93247",sw:"linear-gradient(135deg,#ffffff,#d9def0)"},
  colori:{n:"Colori",b:["#5b3df0","#c2338f"],ink:"#fff",sub:"rgba(255,255,255,.86)",mute:"rgba(255,255,255,.66)",line:"rgba(255,255,255,.28)",box:"rgba(255,255,255,.16)",ok:"#c9ffe3",mid:"#fff1b3",bad:"#ffd1d8",sw:"linear-gradient(135deg,#5b3df0,#c2338f)"}
 };
+const PG_PALETTE=["#5b3df0","#c2338f","#ff6b35","#f5b443","#3fcf8e","#0ea5e9","#1e3a8a","#ec4899","#ef4444","#111827","#14112b","#ffffff"],PG_DEF=["#5b3df0","#c2338f"];
+let pgEditOpen=false;
+function pgHex(v){return /^#[0-9a-f]{6}$/i.test(v||"")}
+function pgCustom(){let a=null;try{a=JSON.parse(localStorage.getItem("schoolflow_pg_custom"))}catch(e){}return Array.isArray(a)&&a.length===2&&a.every(pgHex)?a:PG_DEF.slice()}
+function pgLum(h){const c=[1,3,5].map(i=>{const v=parseInt(h.substr(i,2),16)/255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)});return .2126*c[0]+.7152*c[1]+.0722*c[2]}
+function pgApplyCustom(){const c=pgCustom(),T=PGT.colori,lt=(pgLum(c[0])+pgLum(c[1]))/2>.4;
+ T.b=c.slice();T.sw="linear-gradient(135deg,"+c[0]+","+c[1]+")";
+ if(lt)Object.assign(T,{ink:"#17191f",sub:"rgba(23,25,31,.78)",mute:"rgba(23,25,31,.58)",line:"rgba(23,25,31,.2)",box:"rgba(23,25,31,.08)",ok:"#0b7a4b",mid:"#8a5200",bad:"#b3202f"});
+ else Object.assign(T,{ink:"#fff",sub:"rgba(255,255,255,.86)",mute:"rgba(255,255,255,.66)",line:"rgba(255,255,255,.28)",box:"rgba(255,255,255,.16)",ok:"#c9ffe3",mid:"#fff1b3",bad:"#ffd1d8"})}
+pgApplyCustom();
+function pgSkin(T){return "background:linear-gradient(150deg,"+T.b[0]+","+T.b[1]+");color:"+T.ink+";--pgs:"+T.sub+";--pgm:"+T.mute+";--pgl:"+T.line+";--pgb:"+T.box+";--pgk:"+(T.ink==="#17191f"?"#6b3f00":"#f5b443")}
+function setPgCustom(i,v,live){if(!pgHex(v))return;const c=pgCustom();c[i]=v.toLowerCase();try{localStorage.setItem("schoolflow_pg_custom",JSON.stringify(c))}catch(e){}pgApplyCustom();
+ if(live){const card=document.querySelector("#pagellaBody .pg-card"),sw=document.querySelector('#pagellaBody .pg-models button[onclick*="colori"] i');if(card)card.setAttribute("style",pgSkin(PGT.colori));if(sw)sw.style.background=PGT.colori.sw}else renderPagella()}
+function swapPgCustom(){const c=pgCustom();try{localStorage.setItem("schoolflow_pg_custom",JSON.stringify([c[1],c[0]]))}catch(e){}pgApplyCustom();renderPagella()}
+function resetPgCustom(){try{localStorage.removeItem("schoolflow_pg_custom")}catch(e){}pgApplyCustom();renderPagella()}
+function togglePgEdit(){pgEditOpen=!pgEditOpen;renderPagella()}
+function pgPanel(){const c=pgCustom();
+ const row=i=>`<div class="pg-cr"><span>COLORE ${i+1}</span><div class="pg-sw">${PG_PALETTE.map(h=>`<button type="button" aria-label="${h}" class="${h===c[i].toLowerCase()?"on":""}" style="background:${h}" onclick="setPgCustom(${i},'${h}')"></button>`).join("")}<label class="pg-pick" title="Scegli un colore"><input type="color" value="${c[i]}" oninput="setPgCustom(${i},this.value,true)" onchange="setPgCustom(${i},this.value)">+</label></div></div>`;
+ return `<div class="pg-cust">${row(0)}${row(1)}<div class="pg-ca"><button type="button" onclick="swapPgCustom()">⇄ Scambia</button><button type="button" onclick="resetPgCustom()">Ripristina</button></div></div>`}
 function wBadge(g){const w=n(g.weight,100);return w===100?`<div class="weight">100% peso</div>`:`<div class="wpill ${w>100?"up":"down"}">⚖︎ peso ${f(w)}%</div>`}
 function pgTheme(){let k="viola";try{k=localStorage.getItem("schoolflow_pg_theme")||"viola"}catch(e){}return PGT[k]?k:"viola"}
 function setPgTheme(k){if(!PGT[k])return;try{localStorage.setItem("schoolflow_pg_theme",k)}catch(e){}renderPagella()}
 function renderPagella(){
  const d=pagellaData(),k=pgTheme(),body=document.getElementById("pagellaBody");
  const chips=`<div class="pg-models" role="radiogroup" aria-label="Stile della pagella">${Object.keys(PGT).map(id=>`<button type="button" role="radio" aria-checked="${id===k}" class="${id===k?"on":""}" onclick="setPgTheme('${id}')"><i style="background:${PGT[id].sw}"></i>${PGT[id].n}</button>`).join("")}</div>`;
- body.innerHTML=chips+`<div class="pg-card t-${k}"><div class="pg-top"><div><div class="pg-kick">PAGELLA</div><div class="pg-title">${esc(d.period)}</div><div class="pg-sub">Anno scolastico ${esc(d.year)}</div></div><div class="pg-tag${d.archived?" fin":""}">${d.archived?"PERIODO CONCLUSO":"ANTEPRIMA"}</div></div>
+ const pers=k==="colori"?`<button type="button" class="pg-pers${pgEditOpen?" on":""}" onclick="togglePgEdit()">🎨 Personalizza</button>${pgEditOpen?pgPanel():""}`:"";
+ body.innerHTML=chips+pers+`<div class="pg-card t-${k}"${k==="colori"?` style="${pgSkin(PGT.colori)}"`:""}><div class="pg-top"><div><div class="pg-kick">PAGELLA</div><div class="pg-title">${esc(d.period)}</div><div class="pg-sub">Anno scolastico ${esc(d.year)}</div></div><div class="pg-tag${d.archived?" fin":""}">${d.archived?"PERIODO CONCLUSO":"ANTEPRIMA"}</div></div>
  <div class="pg-head"><span>MATERIA</span><span>MEDIA · VOTO</span></div>
  ${d.rows.map(r=>`<div class="pg-row"><span>${esc(r.icon)}</span><span class="nm">${esc(r.name)}</span><span class="av">${f(r.avg)}</span><span class="gr" style="color:${pgColor(r.gr,k)}">${r.gr}</span></div>`).join("")}
  <div class="pg-tot"><b>MEDIA GENERALE</b><strong style="color:${pgColor(d.overall,k)}">${f(d.overall)}</strong></div>
@@ -1992,7 +2023,7 @@ function renderPagella(){
 function openPagella(){
  const d=pagellaData();
  if(!d.rows.length)return toast("Aggiungi prima qualche voto.");
- renderPagella();
+ pgEditOpen=false;renderPagella();
  document.getElementById("pagellaModal").classList.add("show");
 }
 const PGFF="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif";
